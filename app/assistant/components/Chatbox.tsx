@@ -11,22 +11,10 @@ import {
     AZURE_ERROR_02,
     AZURE_ERROR_03,
 } from '../../_constants/chatbot.cons';
-
-
-type GPTResponse = {
-    response?: TaskResponse;
-    error?: string;
-};
-
-type TaskResponse = {
-    taskName: string[];
-    peopleInvolved: string[];
-    taskCategory: string[];
-    dateToPerform: string;
-    modelResponse: string;
-}
+import { GPTResponse } from '../_types/GTPResponse';
 
 const ChatBox: React.FC = () => {
+
     const { state, addTaskWithRelationships } = useReminders();
     const [newReminderText, setNewReminderText] = useState('');
     const [showCompleted, setShowCompleted] = useState(false);
@@ -70,7 +58,7 @@ const ChatBox: React.FC = () => {
         setInputMessage('');
         setIsLoading(true);
 
-        const request = 'http://localhost:3002/openai/chat';
+        const request = process.env.NEXT_PUBLIC_BACKEND_PROD || '';
         try {
             const res = await fetch(request, {
                 method: 'POST',
@@ -83,8 +71,11 @@ const ChatBox: React.FC = () => {
             });
 
             const data: GPTResponse = await res.json();
+
             addTaskWithRelationships(data.response?.taskName[0] || '', data.response?.peopleInvolved || [], data.response?.dateToPerform);
+            
             const botMessage: Message = { id: Date.now() + 1, text: data.response?.modelResponse || '', sender: 'bot' };
+            
             setMessages(prev => [...prev, botMessage]);
 
         } catch (ex) {

@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+  
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Estilos para el checkbox para que se vea más como el de Apple */
+  input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #4a5568;
+    /* bg-gray-700 */
+    margin: 0;
+    font: inherit;
+    color: currentColor;
+    width: 1.15em;
+    height: 1.15em;
+    border: 0.15em solid #4a5568;
+    /* border-gray-600 */
+    border-radius: 50%;
+    /* Make it circular */
+    transform: translateY(-0.075em);
+    display: grid;
+    place-content: center;
+    cursor: pointer;
+  }
+
+  input[type="checkbox"]::before {
+    content: "";
+    width: 0.65em;
+    height: 0.65em;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 60%);
+    transform: scale(0);
+    transform-origin: bottom left;
+    transition: transform 120ms ease-in-out;
+    background-color: #fff;
+    /* Checkmark color */
+  }
+
+  input[type="checkbox"]:checked {
+    background-color: #3b82f6;
+    /* bg-blue-500 */
+    border-color: #3b82f6;
+    /* border-blue-500 */
+  }
+
+  input[type="checkbox"]:checked::before {
+    transform: scale(1);
+  }
+
+  .max-chatbox{
+    height: calc(2/3 * 100vh);
+  }

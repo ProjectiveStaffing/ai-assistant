@@ -68,7 +68,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         <div className="mb-8 flex-grow">
-          <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-2">TASKS</h3>
+          <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-2">tasks</h3>
           {myLists.map(list => (
             <SidebarListItem
               key={list.id}
@@ -81,13 +81,14 @@ export const Sidebar: React.FC = () => {
           ))}
         </div>
 
-        <button
+        {/* <button
           className="text-blue-500 flex items-center self-start py-2 px-3 rounded-lg hover:bg-gray-700 transition-colors duration-200"
           onClick={handleAddList}
         >
           <PlusIcon className="h-5 w-5 mr-1" />
-          Add List
-        </button>
+          Add
+        </button> */}
+
       </aside>
     </>
   );

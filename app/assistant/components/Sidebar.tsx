@@ -1,11 +1,10 @@
 'use client'
 import React, { useState } from "react";
 import { useReminders } from "../_hook/useReminders";
-import { ListIcon } from "../_icons/ListIcon";
 import { SidebarCategory } from "./SidebarCategory";
-import { PlusIcon } from "../_icons/Plus";
 import { SearchIcon } from "../_icons/SearchIcon";
 import { SidebarListItem } from "./SidebarItem";
+import CollapsibleListSection from "./CollapsibleListSection";
 
 // Componente de la barra lateral
 export const Sidebar: React.FC = () => {
@@ -19,12 +18,12 @@ export const Sidebar: React.FC = () => {
   const categories = state.lists.filter(list => ['today', 'scheduled', 'all', 'flagged'].includes(list.id));
   const myLists = state.lists.filter(list => !['today', 'scheduled', 'all', 'flagged'].includes(list.id));
 
-  const handleAddList = () => {
-    const newListName = prompt("Enter new list name:");
-    if (newListName) {
-      addList(newListName, ListIcon, 'text-gray-400');
-    }
-  };
+  // const handleAddList = () => {
+  //   const newListName = prompt("Enter new list name:");
+  //   if (newListName) {
+  //     addList(newListName, ListIcon, 'text-gray-400');
+  //   }
+  // };
 
   return (
     <>
@@ -67,7 +66,7 @@ export const Sidebar: React.FC = () => {
           ))}
         </div>
 
-        <div className="mb-8 flex-grow">
+        {/* <div className="mb-8 flex-grow">
           <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-2">tasks</h3>
           {myLists.map(list => (
             <SidebarListItem
@@ -79,7 +78,9 @@ export const Sidebar: React.FC = () => {
               count={list.count}
             />
           ))}
-        </div>
+        </div> */}
+
+        <CollapsibleListSection />
 
       </aside>
     </>

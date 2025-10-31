@@ -45,14 +45,14 @@ export const Sidebar: React.FC = () => {
         bg-gray-800 p-4 h-screen overflow-y-auto flex flex-col rounded-l-xl
         md:relative md:translate-x-0 md:rounded-l-xl`} // 4. Ajuste para pantallas medianas en adelante
       >
-        <div className="relative mb-6 w-full">
+        {/* <div className="relative mb-6 w-full">
           <input
             type="text"
             placeholder="Search"
             className="w-full bg-gray-700 text-white rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
           />
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           {categories.map(cat => (
@@ -80,14 +80,6 @@ export const Sidebar: React.FC = () => {
             />
           ))}
         </div>
-
-        {/* <button
-          className="text-blue-500 flex items-center self-start py-2 px-3 rounded-lg hover:bg-gray-700 transition-colors duration-200"
-          onClick={handleAddList}
-        >
-          <PlusIcon className="h-5 w-5 mr-1" />
-          Add
-        </button> */}
 
       </aside>
     </>

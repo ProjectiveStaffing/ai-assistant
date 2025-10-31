@@ -58,7 +58,8 @@ const ChatBox: React.FC = () => {
         setInputMessage('');
         setIsLoading(true);
 
-        const request = process.env.NEXT_PUBLIC_BACKEND_PROD || '';
+        //const request = process.env.NEXT_PUBLIC_BACKEND_PROD || '';
+        const request = 'http://localhost:8080/youtask/api/v0/task';
         try {
             const res = await fetch(request, {
                 method: 'POST',

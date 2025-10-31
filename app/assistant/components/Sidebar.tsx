@@ -68,7 +68,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         <div className="mb-8 flex-grow">
-          <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-2">My Lists</h3>
+          <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-2">TASKS</h3>
           {myLists.map(list => (
             <SidebarListItem
               key={list.id}

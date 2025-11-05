@@ -80,7 +80,11 @@ export const Sidebar: React.FC = () => {
           ))}
         </div> */}
 
-        <CollapsibleListSection />
+        <CollapsibleListSection title="tasks" />
+
+        <CollapsibleListSection title="projects"/>
+
+        <CollapsibleListSection title="habits"/>
 
       </aside>
     </>

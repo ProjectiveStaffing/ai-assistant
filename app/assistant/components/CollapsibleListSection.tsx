@@ -6,20 +6,22 @@ import { SidebarListItem } from './SidebarItem';
 import { useReminders } from '../_hook/useReminders';
 import { MinusIcon } from '../_icons/Minus';
 
+interface CollapsibleListSectionProps {
+  title: string;
+}
 
-
-export default function CollapsibleListSection() {
+export default function CollapsibleListSection({ title }: CollapsibleListSectionProps) {
     const [isOpen, setIsOpen] = useState(true);
     const { state, addList } = useReminders();
     const myLists = state.lists.filter(list => !['today', 'scheduled', 'all', 'flagged'].includes(list.id));
 
     return (
-        <div className="mb-8 flex-grow">
+        <div className="mb-1 flex-grow">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full text-gray-400 text-sm uppercase tracking-wide mb-2 hover:text-gray-200 transition"
+                className="flex items-center justify-between w-full text-gray-400 text-sm uppercase tracking-wide hover:text-gray-200 transition"
             >
-                <span>TASKS</span>
+                <span className='uppercase'>{title}</span>
                 {isOpen ? (
                     <MinusIcon className="w-4 h-4" />
                 ) : (

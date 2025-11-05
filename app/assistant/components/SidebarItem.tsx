@@ -9,7 +9,7 @@ export const SidebarListItem: React.FC<SidebarListItemProps> = ({ id, name, icon
 
   return (
     <div
-      className={`flex items-center justify-between py-2 px-3 rounded-lg cursor-pointer transition-colors duration-200
+      className={`flex items-center justify-between py-1 px-1 rounded-lg cursor-pointer transition-colors duration-200
         ${isSelected ? 'bg-gray-600' : 'hover:bg-gray-700'}`}
       onClick={() => selectList(id)}
     >

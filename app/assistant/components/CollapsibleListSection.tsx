@@ -13,10 +13,13 @@ interface CollapsibleListSectionProps {
 export default function CollapsibleListSection({ title }: CollapsibleListSectionProps) {
     const [isOpen, setIsOpen] = useState(true);
     const { state, addList } = useReminders();
-    const myLists = state.lists.filter(list => !['today', 'scheduled', 'all', 'flagged'].includes(list.id));
+
+    const myLists = state
+    .lists
+    .filter(list => !['all'].includes(list.id));
 
     return (
-        <div className="mb-1 flex-grow">
+        <div className="flex-grow">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center justify-between w-full text-gray-400 text-sm uppercase tracking-wide hover:text-gray-200 transition"
@@ -29,7 +32,6 @@ export default function CollapsibleListSection({ title }: CollapsibleListSection
                 )}
             </button>
 
-            {/* Lista colapsable */}
             <div
                 className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                     }`}

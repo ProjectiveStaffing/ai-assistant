@@ -5,6 +5,7 @@ import { useReminders } from "../_hook/useReminders";
 
 export const SidebarCategory: React.FC<SidebarCategoryProps> = ({ id, name, icon: Icon, color, count }) => {
   const { selectList, state } = useReminders();
+  
   const isSelected = state.selectedListId === id;
 
   return (
@@ -17,6 +18,7 @@ export const SidebarCategory: React.FC<SidebarCategoryProps> = ({ id, name, icon
         <div className={`p-2 rounded-full ${isSelected ? 'bg-white bg-opacity-20' : `bg-gray-600`}`}>
           <Icon className={`h-6 w-6 ${color} ${isSelected ? 'text-white' : ''}`} />
         </div>
+         <span className={`text-2xl font-bold ${isSelected ? 'text-white' : 'text-white'}`}>id: {id}</span>
         <span className={`text-2xl font-bold ${isSelected ? 'text-white' : 'text-white'}`}>{count}</span>
       </div>
       <span className={`text-lg ${isSelected ? 'text-white' : 'text-gray-300'}`}>{name}</span>

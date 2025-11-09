@@ -6,28 +6,15 @@ import { SearchIcon } from "../_icons/SearchIcon";
 import { SidebarListItem } from "./SidebarItem";
 import CollapsibleListSection from "./CollapsibleListSection";
 
-// Componente de la barra lateral
 export const Sidebar: React.FC = () => {
   const { state, addList } = useReminders();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // 1. Estado para controlar la visibilidad del sidebar
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const categories = state.lists.filter(list => ['today', 'scheduled', 'all', 'flagged'].includes(list.id));
-  const myLists = state.lists.filter(list => !['today', 'scheduled', 'all', 'flagged'].includes(list.id));
-
-  // const handleAddList = () => {
-  //   const newListName = prompt("Enter new list name:");
-  //   if (newListName) {
-  //     addList(newListName, ListIcon, 'text-gray-400');
-  //   }
-  // };
-
   return (
     <>
-      {/* 2. Botón de hamburguesa visible solo en pantallas pequeñas */}
       <button
         onClick={toggleSidebar}
         className="md:hidden p-2 text-white fixed top-4 left-4 z-50 bg-gray-800 rounded-md"
@@ -35,14 +22,13 @@ export const Sidebar: React.FC = () => {
         <SearchIcon className="h-6 w-6" />
       </button>
 
-      {/* 3. El Sidebar en sí, ahora con clases dinámicas */}
       <aside
         className={`fixed inset-y-0 left-0 transform ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } transition-transform duration-300 ease-in-out z-40
         w-64 sm:w-72 md:w-80
         bg-gray-800 p-4 h-screen overflow-y-auto flex flex-col rounded-l-xl
-        md:relative md:translate-x-0 md:rounded-l-xl`} // 4. Ajuste para pantallas medianas en adelante
+        md:relative md:translate-x-0 md:rounded-l-xl`} 
       >
         {/* <div className="relative mb-6 w-full">
           <input
@@ -53,7 +39,7 @@ export const Sidebar: React.FC = () => {
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
         </div> */}
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        {/* <div className="grid grid-cols-2 gap-4 mb-8">
           {categories.map(cat => (
             <SidebarCategory
               key={cat.id}
@@ -64,7 +50,7 @@ export const Sidebar: React.FC = () => {
               count={cat.count}
             />
           ))}
-        </div>
+        </div> */}
 
         {/* <div className="mb-8 flex-grow">
           <h3 className="text-gray-400 text-sm uppercase tracking-wide mb-2">tasks</h3>
@@ -81,10 +67,6 @@ export const Sidebar: React.FC = () => {
         </div> */}
 
         <CollapsibleListSection title="tasks" />
-
-        <CollapsibleListSection title="projects"/>
-
-        <CollapsibleListSection title="habits"/>
 
       </aside>
     </>

@@ -1,0 +1,20 @@
+{
+    "response": {
+        "taskName": [
+            "Visit my mom"
+        ],
+        "peopleInvolved": [
+            "User",
+            "Mom"
+        ],
+        "taskCategory": [
+            "Family"
+        ],
+        "dateToPerform": "Monday",
+        "modelResponse": "You need to visit your mom on Monday.",
+        "itemType": [
+            "Task"
+        ],
+        "assignedTo": "User"
+    }
+}

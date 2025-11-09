@@ -17,7 +17,6 @@ const ChatBox: React.FC = () => {
 
     const { state, addTaskWithRelationships } = useReminders();
     const [newReminderText, setNewReminderText] = useState('');
-    const [showCompleted, setShowCompleted] = useState(false);
 
     const selectedList = state.lists.find(list => list.id === state.selectedListId);
 
@@ -28,21 +27,9 @@ const ChatBox: React.FC = () => {
         if (selectedList?.parentId === 'family' && reminder.relationships) {
             return reminder.relationships.includes(selectedList.name.toLowerCase());
         }
-        if (state.selectedListId === 'today') {
-            const today = new Date().toISOString().split('T')[0];
-            return reminder.dueDate === today;
-        }
-        if (state.selectedListId === 'scheduled') {
-            const today = new Date().toISOString().split('T')[0];
-            return reminder.dueDate && reminder.dueDate > today;
-        }
-        if (state.selectedListId === 'flagged') {
-            return reminder.isFlagged;
-        }
         return reminder.listId === state.selectedListId;
     });
 
-    const completedReminders = filteredReminders.filter(r => r.isCompleted);
     const incompleteReminders = filteredReminders.filter(r => !r.isCompleted);
     const [messages, setMessages] = useState<Message[]>([
         { id: 1, text: GREETING, sender: 'bot' },
@@ -72,11 +59,14 @@ const ChatBox: React.FC = () => {
             });
 
             const data: GPTResponse = await res.json();
+            console.log("data", data);
 
-            addTaskWithRelationships(data.response?.taskName[0] || '', data.response?.peopleInvolved || [], data.response?.dateToPerform);
-            
+            const { taskName, peopleInvolved, taskCategory, dateToPerform, itemType, assignedTo } = data.response;
+
+            addTaskWithRelationships(taskName[0], peopleInvolved, taskCategory[0], dateToPerform, itemType[0], assignedTo);
+
             const botMessage: Message = { id: Date.now() + 1, text: data.response?.modelResponse || '', sender: 'bot' };
-            
+
             setMessages(prev => [...prev, botMessage]);
 
         } catch (ex) {
@@ -98,42 +88,7 @@ const ChatBox: React.FC = () => {
         <div className="flex flex-col h-full w-full">
             <div className="flex-1 bg-gray-900 p-8 overflow-y-auto">
 
-                {completedReminders.length > 0 && (
-                    <div className="mb-6">
-                        <div className="flex justify-between items-center text-gray-400 mb-2">
-                            <span className="text-sm">{completedReminders.length} Completed</span>
-                            <button
-                                className="text-blue-500 text-sm hover:underline"
-                                onClick={() => setShowCompleted(!showCompleted)}
-                            >
-                                {showCompleted ? 'Hide' : 'Show'}
-                            </button>
-                        </div>
-                        {showCompleted && (
-                            <div className="bg-gray-800 rounded-lg p-2">
-                                {completedReminders.map(reminder => (
-                                    <ReminderItem key={reminder.id} reminder={reminder} />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
                 <div className="bg-gray-800 rounded-lg p-4">
-                    <div className="flex items-center mb-4">
-                        <PlusIcon className="h-5 w-5 text-gray-500 mr-3" />
-                        <input
-                            type="text"
-                            placeholder="New Reminder"
-                            className="flex-1 bg-transparent text-white text-lg focus:outline-none placeholder-gray-500"
-                            value={newReminderText}
-                            onChange={(e) => setNewReminderText(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
-                        <button className="text-blue-500 text-sm py-1 px-3 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors duration-200">
-                            +
-                        </button>
-                    </div>
                     {incompleteReminders.map(reminder => (
                         <ReminderItem key={reminder.id} reminder={reminder} />
                     ))}

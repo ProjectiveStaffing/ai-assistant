@@ -8,8 +8,11 @@ export interface RemindersContextType {
   selectList: (listId: string) => void;
   updateReminderCount: (listId: string, count: number) => void;
   addTaskWithRelationships: (
-  taskName: string,
-  relationships: string[],
-  fecha?: string
-) => void;
+    taskName: string,
+    peopleInvolved: string[],
+    taskCategory: string,
+    dateToPerform: string,
+    itemType: string,
+    assignedTo: string
+  ) => void;
 }

@@ -17,8 +17,8 @@ const ChatSection: React.FC<ChatSectionProps> = ({ messages, isLoading, onSendMe
   };
 
   return (
-    <div className="bg-gray-900 p-8 flex flex-col justify-end border-t border-gray-700 max-chatbox">
-      <div className="flex-1 overflow-y-auto mb-4 p-4 bg-gray-800 rounded-lg">
+    <div className="bg-gray-900 p-8 flex flex-col justify-end border-t border-gray-700 h-full">
+      <div className="flex-1 overflow-y-auto mb-4 p-4 bg-gray-800 rounded-lg h-full">
         {messages.map(msg => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
             <div className={`p-3 rounded-lg max-w-xs ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'}`}>

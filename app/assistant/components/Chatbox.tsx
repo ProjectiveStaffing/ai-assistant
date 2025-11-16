@@ -28,6 +28,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ showReminders, onCloseReminders }) =>
     setIsLoading(true);
 
     try {
+      console.log("useReminders:", state);
       const res = await fetch('http://localhost:8080/youtask/api/v0/task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,7 +68,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ showReminders, onCloseReminders }) =>
             onClick={onCloseReminders}
             className="absolute top-4 right-4 z-10 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition"
           >
-            ✖ Cerrar
+            back
           </button>
 
           <RemindersSection onClose={function (): void {

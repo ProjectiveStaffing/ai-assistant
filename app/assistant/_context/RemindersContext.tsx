@@ -13,6 +13,9 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     const initialLists: ReminderList[] = [
       { id: 'all', name: 'All', icon: ListIcon, color: 'text-gray-400', count: 0 },
+      { id: 'tasks', name: 'Tasks', icon: ListIcon, color: 'text-blue-400', count: 0, parentId: 'task' },
+      { id: 'projects', name: 'Projects', icon: ListIcon, color: 'text-purple-400', count: 0, parentId: 'project' },
+      { id: 'habits', name: 'Habits', icon: ListIcon, color: 'text-green-400', count: 0, parentId: 'habit' },
     ];
 
     const initialReminders: Reminder[] = [];
@@ -49,6 +52,18 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
           const familyLists = prevState.lists.filter(l => l.parentId === 'family');
           const familyReminders = currentReminders.filter(r => familyLists.some(fl => r.relationships?.includes(fl.name)));
           count = familyReminders.length;
+        } else if (list.id === 'tasks') {
+          count = currentReminders.filter(r =>
+            r.itemType?.toLowerCase() === 'task' && !r.isCompleted
+          ).length;
+        } else if (list.id === 'projects') {
+          count = currentReminders.filter(r =>
+            r.itemType?.toLowerCase() === 'project' && !r.isCompleted
+          ).length;
+        } else if (list.id === 'habits') {
+          count = currentReminders.filter(r =>
+            r.itemType?.toLowerCase() === 'habit' && !r.isCompleted
+          ).length;
         }
         else {
           count = currentReminders.filter(r => r.relationships?.includes(list.name) && !r.isCompleted).length;
@@ -164,7 +179,7 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
             icon: ListIcon,
             color: "text-green-400",
             count: 0,
-            parentId: taskCategory
+            parentId: itemType?.toLowerCase() // Agrupar por tipo: task, project, habit
           };
           updatedLists.push(newList);
         }

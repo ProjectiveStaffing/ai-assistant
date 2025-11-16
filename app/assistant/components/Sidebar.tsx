@@ -29,7 +29,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onListClick }) => {
         bg-gray-800 p-4 h-screen overflow-y-auto flex flex-col rounded-l-xl
         md:relative md:translate-x-0 md:rounded-l-xl`}
       >
-        <CollapsibleListSection title="tasks" onListClick={onListClick} />
+        <div className="space-y-6">
+          <CollapsibleListSection title="tasks" onListClick={onListClick} itemType="task" />
+          <CollapsibleListSection title="projects" onListClick={onListClick} itemType="project" />
+          <CollapsibleListSection title="habits" onListClick={onListClick} itemType="habit" />
+        </div>
       </aside>
     </>
   );

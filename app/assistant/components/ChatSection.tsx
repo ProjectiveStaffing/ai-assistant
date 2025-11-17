@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Message } from '../_types/Message';
 import { WRITING } from '../../_constants/chatbot.cons';
 
@@ -11,9 +11,25 @@ interface ChatSectionProps {
 
 const ChatSection: React.FC<ChatSectionProps> = ({ messages, isLoading, onSendMessage }) => {
   const [inputMessage, setInputMessage] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') onSendMessage(inputMessage);
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [inputMessage]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter envía mensaje, Shift+Enter crea nueva línea
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (inputMessage.trim()) {
+        onSendMessage(inputMessage);
+        setInputMessage('');
+      }
+    }
   };
 
   return (
@@ -21,7 +37,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ messages, isLoading, onSendMe
       <div className="flex-1 overflow-y-auto mb-4 p-4 bg-gray-800 rounded-lg h-full">
         {messages.map(msg => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
-            <div className={`p-3 rounded-lg max-w-xs ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'}`}>
+            <div className={`p-3 rounded-lg max-w-xs md:max-w-md lg:max-w-lg break-words whitespace-pre-wrap ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'}`}>
               {msg.text}
             </div>
           </div>
@@ -35,19 +51,30 @@ const ChatSection: React.FC<ChatSectionProps> = ({ messages, isLoading, onSendMe
         )}
       </div>
 
-      <div className="flex items-center">
-        <input
-          type="text"
+      <div className="flex items-end">
+        <textarea
+          ref={textareaRef}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Escribe un mensaje..."
-          className="flex-1 bg-gray-700 text-white rounded-full py-3 px-6 mr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+          className="flex-1 bg-gray-700 text-white rounded-3xl py-3 px-6 mr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 resize-none overflow-y-auto text-sm md:text-base"
           disabled={isLoading}
+          rows={1}
+          style={{
+            minHeight: '48px',
+            maxHeight: '200px'
+          }}
+          title="Enter para enviar, Shift+Enter para nueva línea"
         />
         <button
-          onClick={() => { onSendMessage(inputMessage); setInputMessage(''); }}
-          className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-colors duration-200 disabled:bg-gray-500"
+          onClick={() => {
+            if (inputMessage.trim()) {
+              onSendMessage(inputMessage);
+              setInputMessage('');
+            }
+          }}
+          className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-colors duration-200 disabled:bg-gray-500 flex-shrink-0"
           disabled={isLoading || !inputMessage.trim()}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

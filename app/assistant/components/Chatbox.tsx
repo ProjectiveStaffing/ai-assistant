@@ -40,12 +40,15 @@ const ChatBox: React.FC<ChatBoxProps> = ({ showReminders, onCloseReminders }) =>
 
       const result = addTaskWithRelationships(taskName[0], peopleInvolved, taskCategory[0], dateToPerform, itemType[0], assignedTo);
 
-      // Personalizar mensaje según si se creó o actualizó
+      // Personalizar mensaje según si se creó, actualizó o mantuvo
       let responseText = data.response?.modelResponse || '';
 
       if (result.action === 'updated') {
         const similarityPercent = Math.round((result.similarity || 0) * 100);
         responseText = `✏️ He actualizado la tarea existente "${result.taskName}" con la nueva información (similitud: ${similarityPercent}%).`;
+      } else if (result.action === 'kept_existing') {
+        const similarityPercent = Math.round((result.similarity || 0) * 100);
+        responseText = `🛡️ Ya tienes una tarea similar "${result.taskName}" con más información. He mantenido la versión más completa (similitud: ${similarityPercent}%).`;
       } else {
         responseText = `✅ ${data.response?.modelResponse || 'Tarea creada exitosamente.'}`;
       }

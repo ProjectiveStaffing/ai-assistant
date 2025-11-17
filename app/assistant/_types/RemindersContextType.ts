@@ -16,5 +16,5 @@ export interface RemindersContextType {
     dateToPerform: string,
     itemType: string,
     assignedTo: string
-  ) => { action: 'created' | 'updated'; taskName: string; similarity?: number };
+  ) => { action: 'created' | 'updated' | 'kept_existing'; taskName: string; similarity?: number };
 }

@@ -128,6 +128,52 @@ export const findSimilarTask = (
 };
 
 /**
+ * Calcula el "nivel de información" de una tarea
+ * Retorna un score que representa cuánta información contiene
+ */
+export const calculateInformationScore = (task: {
+  text: string;
+  dueDate?: string;
+  assignedTo?: string;
+  relationships?: string[];
+  notes?: string;
+}): number => {
+  let score = 0;
+
+  // Puntos por longitud del texto (más palabras = más detalles)
+  const wordCount = task.text.trim().split(/\s+/).length;
+  score += wordCount * 2; // 2 puntos por palabra
+
+  // Puntos por tener fecha
+  if (task.dueDate && task.dueDate !== '') {
+    score += 15;
+
+    // Puntos extra si tiene hora específica (ej: "7pm", "19:00")
+    const hasTime = /\d{1,2}:\d{2}|[ap]m|[AP]M|\d{1,2}\s*[ap]m/i.test(task.dueDate);
+    if (hasTime) {
+      score += 10;
+    }
+  }
+
+  // Puntos por tener persona asignada
+  if (task.assignedTo && task.assignedTo !== '') {
+    score += 8;
+  }
+
+  // Puntos por relationships (más personas = más contexto)
+  if (task.relationships && task.relationships.length > 0) {
+    score += task.relationships.length * 5;
+  }
+
+  // Puntos por tener notas
+  if (task.notes && task.notes !== '') {
+    score += task.notes.length * 0.5;
+  }
+
+  return score;
+};
+
+/**
  * Determina qué campos de la tarea deben actualizarse
  */
 export const shouldUpdateField = (
@@ -148,6 +194,7 @@ export const shouldUpdateField = (
 
 /**
  * Combina información de una tarea existente con nueva información
+ * SOLO actualiza si la nueva tarea tiene MÁS o IGUAL información
  */
 export const mergeTaskData = (
   existingTask: Reminder,
@@ -159,17 +206,62 @@ export const mergeTaskData = (
     itemType: string;
     assignedTo: string;
   }
-): Partial<Reminder> => {
+): { updates: Partial<Reminder>; shouldUpdate: boolean; reason: string } => {
   const updates: Partial<Reminder> = {};
 
-  // Actualizar fecha si es nueva o diferente
+  // Calcular scores de información
+  const existingScore = calculateInformationScore({
+    text: existingTask.text,
+    dueDate: existingTask.dueDate,
+    assignedTo: existingTask.assignedTo,
+    relationships: existingTask.relationships,
+    notes: existingTask.notes
+  });
+
+  const newScore = calculateInformationScore({
+    text: newData.taskName,
+    dueDate: newData.dateToPerform,
+    assignedTo: newData.assignedTo,
+    relationships: newData.peopleInvolved,
+    notes: undefined
+  });
+
+  console.log(`📊 Score existente: ${existingScore} | Score nueva: ${newScore}`);
+
+  // Si la nueva tarea tiene MENOS información, NO actualizar
+  if (newScore < existingScore) {
+    return {
+      updates: {},
+      shouldUpdate: false,
+      reason: `La tarea existente tiene más información (${existingScore} vs ${newScore})`
+    };
+  }
+
+  // Si la nueva tiene MÁS o IGUAL información, proceder con actualización
+  let hasChanges = false;
+
+  // Actualizar texto si la nueva versión es más larga/completa
+  if (newData.taskName.length > existingTask.text.length) {
+    updates.text = newData.taskName;
+    hasChanges = true;
+  }
+
+  // Actualizar fecha si es nueva o tiene más detalle
   if (shouldUpdateField(existingTask.dueDate, newData.dateToPerform)) {
-    updates.dueDate = newData.dateToPerform;
+    const existingHasTime = existingTask.dueDate ? /\d{1,2}:\d{2}|[ap]m/i.test(existingTask.dueDate) : false;
+    const newHasTime = newData.dateToPerform ? /\d{1,2}:\d{2}|[ap]m/i.test(newData.dateToPerform) : false;
+
+    // Solo actualizar si la nueva tiene hora y la vieja no, o si es diferente
+    if (!existingTask.dueDate || newHasTime >= existingHasTime) {
+      updates.dueDate = newData.dateToPerform;
+      hasChanges = true;
+    }
   }
 
   // Actualizar assignedTo si cambió
   if (shouldUpdateField(existingTask.assignedTo, newData.assignedTo)) {
     updates.assignedTo = newData.assignedTo;
+    hasChanges = true;
   }
 
   // Actualizar relationships (combinar únicas)
@@ -180,13 +272,21 @@ export const mergeTaskData = (
     );
     if (combinedRelationships.length !== existingRelationships.length) {
       updates.relationships = combinedRelationships;
+      hasChanges = true;
     }
   }
 
   // Marcar como no completada si estaba completada
   if (existingTask.isCompleted) {
     updates.isCompleted = false;
+    hasChanges = true;
   }
 
-  return updates;
+  return {
+    updates,
+    shouldUpdate: hasChanges,
+    reason: hasChanges
+      ? `Tarea actualizada con más información (${newScore} vs ${existingScore})`
+      : 'No hay cambios necesarios'
+  };
 };

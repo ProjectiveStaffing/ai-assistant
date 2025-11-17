@@ -153,8 +153,8 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
     dateToPerform: string,
     itemType: string,
     assignedTo: string
-  ): { action: 'created' | 'updated'; taskName: string; similarity?: number } => {
-    let result: { action: 'created' | 'updated'; taskName: string; similarity?: number } = {
+  ): { action: 'created' | 'updated' | 'kept_existing'; taskName: string; similarity?: number } => {
+    let result: { action: 'created' | 'updated' | 'kept_existing'; taskName: string; similarity?: number } = {
       action: 'created',
       taskName
     };
@@ -180,10 +180,10 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
       );
 
       if (similarTask && similarIndex !== -1) {
-        // MODIFICAR tarea existente
+        // MODIFICAR tarea existente (o mantenerla si la nueva tiene menos info)
         console.log(`✏️ Tarea similar encontrada (${Math.round(similarity * 100)}% similitud): "${similarTask.text}"`);
 
-        const updates = mergeTaskData(similarTask, {
+        const mergeResult = mergeTaskData(similarTask, {
           taskName,
           peopleInvolved,
           taskCategory,
@@ -192,19 +192,32 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
           assignedTo
         });
 
-        // Aplicar actualizaciones
-        updatedReminders[similarIndex] = {
-          ...similarTask,
-          ...updates
-        };
+        console.log(`🔍 ${mergeResult.reason}`);
 
-        result = {
-          action: 'updated',
-          taskName: similarTask.text,
-          similarity
-        };
+        if (mergeResult.shouldUpdate) {
+          // La nueva tarea tiene MÁS información, actualizar
+          updatedReminders[similarIndex] = {
+            ...similarTask,
+            ...mergeResult.updates
+          };
 
-        console.log('📝 Tarea actualizada:', updatedReminders[similarIndex]);
+          result = {
+            action: 'updated',
+            taskName: similarTask.text,
+            similarity
+          };
+
+          console.log('✅ Tarea actualizada:', updatedReminders[similarIndex]);
+        } else {
+          // La nueva tarea tiene MENOS información, mantener la existente
+          result = {
+            action: 'kept_existing',
+            taskName: similarTask.text,
+            similarity
+          } as any;
+
+          console.log('🛡️ Tarea existente conservada (es más completa)');
+        }
       } else {
         // CREAR nueva tarea
         console.log('➕ Creando nueva tarea:', taskName);

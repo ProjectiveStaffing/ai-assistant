@@ -1,5 +1,5 @@
 export const WRITING = 'Typing...';
-export const GREETING = 'Hi, I’m your personal reminder assistant. How can I help you?';
+export const GREETING = 'Hi I\'m your Automatic Task Manager';
 export const GREETINGS_02 = '¡Hi! How can I help you?';
 
 export const AZURE_ERROR_02 = 'Error sending message to Azure:';

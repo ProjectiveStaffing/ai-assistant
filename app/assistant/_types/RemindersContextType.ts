@@ -1,4 +1,5 @@
 import { AppState } from "./AppState";
+import { Reminder } from "./Reminder";
 
 export interface RemindersContextType {
   state: AppState;
@@ -7,6 +8,7 @@ export interface RemindersContextType {
   addList: (name: string, icon: React.FC<React.SVGProps<SVGSVGElement>>, color: string) => void;
   selectList: (listId: string) => void;
   updateReminderCount: (listId: string, count: number) => void;
+  updateTask: (taskId: string, updates: Partial<Reminder>) => void;
   addTaskWithRelationships: (
     taskName: string,
     peopleInvolved: string[],
@@ -14,5 +16,5 @@ export interface RemindersContextType {
     dateToPerform: string,
     itemType: string,
     assignedTo: string
-  ) => void;
+  ) => { action: 'created' | 'updated'; taskName: string; similarity?: number };
 }

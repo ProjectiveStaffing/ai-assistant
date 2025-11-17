@@ -5,6 +5,7 @@ import { AppState } from "../_types/AppState";
 import { ReminderList } from "../_types/ReminderList";
 import { ListIcon } from "../_icons/ListIcon";
 import { Reminder } from "../_types/Reminder";
+import { findSimilarTask, mergeTaskData } from "../_utils/taskComparison";
 
 export const RemindersContext = createContext<RemindersContextType | undefined>(undefined);
 
@@ -136,6 +137,15 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   };
 
+  const updateTask = (taskId: string, updates: Partial<Reminder>) => {
+    setState(prevState => ({
+      ...prevState,
+      reminders: prevState.reminders.map(reminder =>
+        reminder.id === taskId ? { ...reminder, ...updates } : reminder
+      ),
+    }));
+  };
+
   const addTaskWithRelationships = (
     taskName: string,
     peopleInvolved: string[],
@@ -143,19 +153,62 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
     dateToPerform: string,
     itemType: string,
     assignedTo: string
-  ) => {
+  ): { action: 'created' | 'updated'; taskName: string; similarity?: number } => {
+    let result: { action: 'created' | 'updated'; taskName: string; similarity?: number } = {
+      action: 'created',
+      taskName
+    };
+
     setState(prevState => {
       const updatedLists = [...prevState.lists];
       const updatedReminders = [...prevState.reminders];
 
       const familyList = updatedLists.find(list => list.id === 'family');
       const defaultListId = familyList ? familyList.id : 'all';
-      
-      const existingReminder = updatedReminders.find(r =>
-        r.text === taskName && r.listId === defaultListId
+
+      // Buscar tarea similar usando el algoritmo de comparación
+      const newTaskData = {
+        text: taskName,
+        assignedTo,
+        itemType
+      };
+
+      const { index: similarIndex, task: similarTask, similarity } = findSimilarTask(
+        newTaskData,
+        updatedReminders,
+        0.85 // Umbral de similitud del 85%
       );
 
-      if (!existingReminder) {
+      if (similarTask && similarIndex !== -1) {
+        // MODIFICAR tarea existente
+        console.log(`✏️ Tarea similar encontrada (${Math.round(similarity * 100)}% similitud): "${similarTask.text}"`);
+
+        const updates = mergeTaskData(similarTask, {
+          taskName,
+          peopleInvolved,
+          taskCategory,
+          dateToPerform,
+          itemType,
+          assignedTo
+        });
+
+        // Aplicar actualizaciones
+        updatedReminders[similarIndex] = {
+          ...similarTask,
+          ...updates
+        };
+
+        result = {
+          action: 'updated',
+          taskName: similarTask.text,
+          similarity
+        };
+
+        console.log('📝 Tarea actualizada:', updatedReminders[similarIndex]);
+      } else {
+        // CREAR nueva tarea
+        console.log('➕ Creando nueva tarea:', taskName);
+
         const newReminder: Reminder = {
           id: String(Date.now() + Math.random()),
           text: taskName,
@@ -168,21 +221,28 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
           assignedTo
         };
         updatedReminders.push(newReminder);
+
+        result = {
+          action: 'created',
+          taskName
+        };
       }
-        const existingList = updatedLists.find(
-          list => list.name.toLowerCase() === assignedTo.toLowerCase()
-        );
-        if (!existingList) {
-          const newList: ReminderList = {
-            id: String(Date.now() + Math.random()),
-            name: assignedTo,
-            icon: ListIcon,
-            color: "text-green-400",
-            count: 0,
-            parentId: itemType?.toLowerCase() // Agrupar por tipo: task, project, habit
-          };
-          updatedLists.push(newList);
-        }
+
+      // Crear lista si no existe
+      const existingList = updatedLists.find(
+        list => list.name.toLowerCase() === assignedTo.toLowerCase()
+      );
+      if (!existingList) {
+        const newList: ReminderList = {
+          id: String(Date.now() + Math.random()),
+          name: assignedTo,
+          icon: ListIcon,
+          color: "text-green-400",
+          count: 0,
+          parentId: itemType?.toLowerCase()
+        };
+        updatedLists.push(newList);
+      }
 
       return {
         ...prevState,
@@ -190,6 +250,8 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
         reminders: updatedReminders
       };
     });
+
+    return result;
   };
 
 
@@ -201,6 +263,7 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
       addList,
       selectList,
       updateReminderCount,
+      updateTask,
       addTaskWithRelationships
     }}>
       {children}

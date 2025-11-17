@@ -38,11 +38,21 @@ const ChatBox: React.FC<ChatBoxProps> = ({ showReminders, onCloseReminders }) =>
       const data: GPTResponse = await res.json();
       const { taskName, peopleInvolved, taskCategory, dateToPerform, itemType, assignedTo } = data.response;
 
-      addTaskWithRelationships(taskName[0], peopleInvolved, taskCategory[0], dateToPerform, itemType[0], assignedTo);
+      const result = addTaskWithRelationships(taskName[0], peopleInvolved, taskCategory[0], dateToPerform, itemType[0], assignedTo);
+
+      // Personalizar mensaje según si se creó o actualizó
+      let responseText = data.response?.modelResponse || '';
+
+      if (result.action === 'updated') {
+        const similarityPercent = Math.round((result.similarity || 0) * 100);
+        responseText = `✏️ He actualizado la tarea existente "${result.taskName}" con la nueva información (similitud: ${similarityPercent}%).`;
+      } else {
+        responseText = `✅ ${data.response?.modelResponse || 'Tarea creada exitosamente.'}`;
+      }
 
       const botMessage: Message = {
         id: Date.now() + 1,
-        text: data.response?.modelResponse || '',
+        text: responseText,
         sender: 'bot',
       };
       setMessages(prev => [...prev, botMessage]);

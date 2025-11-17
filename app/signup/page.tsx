@@ -13,13 +13,67 @@ if (!process.env.NEXT_PUBLIC_PLAYFAB_TITLE_ID) {
 PlayFab.settings.titleId = process.env.NEXT_PUBLIC_PLAYFAB_TITLE_ID;
 
 export default function SignUpPage() {
+  const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [displayNameError, setDisplayNameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showPasswordMatch, setShowPasswordMatch] = useState(false);
   const [emailError, setEmailError] = useState('');
   const router = useRouter();
+
+  // Validar username en tiempo real
+  const validateUsername = (usernameValue: string) => {
+    if (usernameValue.length === 0) {
+      setUsernameError('');
+      return true;
+    }
+
+    // Validar que no tenga espacios
+    if (/\s/.test(usernameValue)) {
+      setUsernameError('El username no puede contener espacios');
+      return false;
+    }
+
+    // Validar longitud (3-20 caracteres)
+    if (usernameValue.length < 3) {
+      setUsernameError('El username debe tener al menos 3 caracteres');
+      return false;
+    }
+
+    if (usernameValue.length > 20) {
+      setUsernameError('El username no puede tener más de 20 caracteres');
+      return false;
+    }
+
+    setUsernameError('');
+    return true;
+  };
+
+  // Validar displayName en tiempo real
+  const validateDisplayName = (displayNameValue: string) => {
+    if (displayNameValue.length === 0) {
+      setDisplayNameError('');
+      return true;
+    }
+
+    // Validar longitud (3-25 caracteres)
+    if (displayNameValue.length < 3) {
+      setDisplayNameError('El nombre debe tener al menos 3 caracteres');
+      return false;
+    }
+
+    if (displayNameValue.length > 25) {
+      setDisplayNameError('El nombre no puede tener más de 25 caracteres');
+      return false;
+    }
+
+    setDisplayNameError('');
+    return true;
+  };
 
   // Validar email en tiempo real
   const validateEmail = (emailValue: string) => {
@@ -59,6 +113,16 @@ export default function SignUpPage() {
     }
   };
 
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    validateUsername(value);
+  };
+
+  const handleDisplayNameChange = (value: string) => {
+    setDisplayName(value);
+    validateDisplayName(value);
+  };
+
   const handleEmailChange = (value: string) => {
     setEmail(value);
     validateEmail(value);
@@ -77,6 +141,16 @@ export default function SignUpPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validación de username
+    if (!validateUsername(username)) {
+      return;
+    }
+
+    // Validación de displayName
+    if (!validateDisplayName(displayName)) {
+      return;
+    }
+
     // Validación de email
     if (!validateEmail(email)) {
       return;
@@ -93,11 +167,9 @@ export default function SignUpPage() {
       return;
     }
 
-    //alert(`Correo: ${email}\nContraseña: ${password}`);
-
     const createUser = {
-      Username: email,
-      DisplayName: email,
+      Username: username,
+      DisplayName: displayName,
       Email: email,
       Password: password,
     }
@@ -132,6 +204,94 @@ export default function SignUpPage() {
           Sign up <span className="text-[#8AB4F8]">Youtask</span>
         </h2>
         <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="text-sm text-[#BDC1C6]">Username</label>
+            <div className="relative">
+              <input
+                type="text"
+                className={`w-full mt-1 p-3 rounded-lg bg-[#2D2F31] border ${
+                  usernameError
+                    ? 'border-red-500'
+                    : username && !usernameError
+                    ? 'border-green-500'
+                    : 'border-[#3C4043]'
+                } text-white placeholder:text-[#BDC1C6] outline-none focus:border-blue-500 pr-10`}
+                placeholder="usuario123"
+                value={username}
+                onChange={(e) => handleUsernameChange(e.target.value)}
+                required
+              />
+              {/* Indicador visual */}
+              {username && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {usernameError ? (
+                    <span className="text-red-500 text-xl">✗</span>
+                  ) : (
+                    <span className="text-green-500 text-xl">✓</span>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Mensaje de error */}
+            {usernameError && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <span>⚠️</span>
+                {usernameError}
+              </p>
+            )}
+            {/* Mensaje de éxito */}
+            {!usernameError && username && (
+              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                <span>✓</span>
+                Username válido (3-20 caracteres, sin espacios)
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm text-[#BDC1C6]">Display Name</label>
+            <div className="relative">
+              <input
+                type="text"
+                className={`w-full mt-1 p-3 rounded-lg bg-[#2D2F31] border ${
+                  displayNameError
+                    ? 'border-red-500'
+                    : displayName && !displayNameError
+                    ? 'border-green-500'
+                    : 'border-[#3C4043]'
+                } text-white placeholder:text-[#BDC1C6] outline-none focus:border-blue-500 pr-10`}
+                placeholder="Juan Pérez"
+                value={displayName}
+                onChange={(e) => handleDisplayNameChange(e.target.value)}
+                required
+              />
+              {/* Indicador visual */}
+              {displayName && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {displayNameError ? (
+                    <span className="text-red-500 text-xl">✗</span>
+                  ) : (
+                    <span className="text-green-500 text-xl">✓</span>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Mensaje de error */}
+            {displayNameError && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <span>⚠️</span>
+                {displayNameError}
+              </p>
+            )}
+            {/* Mensaje de éxito */}
+            {!displayNameError && displayName && (
+              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                <span>✓</span>
+                Nombre válido (3-25 caracteres)
+              </p>
+            )}
+          </div>
+
           <div>
             <label className="text-sm text-[#BDC1C6]">Email</label>
             <div className="relative">
@@ -235,9 +395,15 @@ export default function SignUpPage() {
 
           <button
             type="submit"
-            disabled={!email || !password || !confirmPassword || !!emailError || !!passwordError || password.length < 6}
+            disabled={
+              !username || !displayName || !email || !password || !confirmPassword ||
+              !!usernameError || !!displayNameError || !!emailError || !!passwordError ||
+              password.length < 6
+            }
             className={`w-full mt-4 p-3 rounded-lg font-semibold transition-all ${
-              !email || !password || !confirmPassword || !!emailError || !!passwordError || password.length < 6
+              !username || !displayName || !email || !password || !confirmPassword ||
+              !!usernameError || !!displayNameError || !!emailError || !!passwordError ||
+              password.length < 6
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-blue-500 to-pink-500 text-white hover:opacity-90'
             }`}

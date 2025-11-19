@@ -1,164 +1,132 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+/**
+ * Sign Up Page
+ * Following BEST_PRACTICES.md:
+ * - Component size < 250 lines
+ * - Organized imports (external → internal hooks → components → utils)
+ * - Type safety with explicit types
+ * - Separation of concerns (validation, API logic extracted)
+ */
 
-import { PlayFab, PlayFabClient } from 'playfab-sdk';
+// External libraries
+import { useState } from 'react';
 import Link from 'next/link';
 
-if (!process.env.NEXT_PUBLIC_PLAYFAB_TITLE_ID) {
-  throw new Error("NEXT_PUBLIC_PLAYFAB_TITLE_ID is not defined");
-}
+// Internal hooks
+import { useSignUp } from './_hook/useSignUp';
 
-PlayFab.settings.titleId = process.env.NEXT_PUBLIC_PLAYFAB_TITLE_ID;
+// Components
+import FormField from './components/FormField';
+import ValidationMessage from './components/ValidationMessage';
+
+// Utilities
+import {
+  validateUsername,
+  validateDisplayName,
+  validateEmail,
+  validatePasswordMatch,
+  validatePassword,
+} from './_utils/validation';
 
 export default function SignUpPage() {
+  // Form state
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Validation state
   const [usernameError, setUsernameError] = useState('');
   const [displayNameError, setDisplayNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showPasswordMatch, setShowPasswordMatch] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const router = useRouter();
 
-  // Validar username en tiempo real
-  const validateUsername = (usernameValue: string) => {
-    if (usernameValue.length === 0) {
-      setUsernameError('');
-      return true;
-    }
+  // Sign up hook
+  const { isLoading, error: signUpError, signUp } = useSignUp();
 
-    // Validar que no tenga espacios
-    if (/\s/.test(usernameValue)) {
-      setUsernameError('El username no puede contener espacios');
-      return false;
-    }
-
-    // Validar longitud (3-20 caracteres)
-    if (usernameValue.length < 3) {
-      setUsernameError('El username debe tener al menos 3 caracteres');
-      return false;
-    }
-
-    if (usernameValue.length > 20) {
-      setUsernameError('El username no puede tener más de 20 caracteres');
-      return false;
-    }
-
-    setUsernameError('');
-    return true;
-  };
-
-  // Validar displayName en tiempo real
-  const validateDisplayName = (displayNameValue: string) => {
-    if (displayNameValue.length === 0) {
-      setDisplayNameError('');
-      return true;
-    }
-
-    // Validar longitud (3-25 caracteres)
-    if (displayNameValue.length < 3) {
-      setDisplayNameError('El nombre debe tener al menos 3 caracteres');
-      return false;
-    }
-
-    if (displayNameValue.length > 25) {
-      setDisplayNameError('El nombre no puede tener más de 25 caracteres');
-      return false;
-    }
-
-    setDisplayNameError('');
-    return true;
-  };
-
-  // Validar email en tiempo real
-  const validateEmail = (emailValue: string) => {
-    if (emailValue.length === 0) {
-      setEmailError('');
-      return true;
-    }
-
-    // Regex para validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(emailValue)) {
-      setEmailError('Por favor ingresa un email válido');
-      return false;
-    }
-
-    setEmailError('');
-    return true;
-  };
-
-  // Validar contraseñas en tiempo real
-  const validatePasswords = (pass: string, confirmPass: string) => {
-    if (confirmPass.length === 0) {
-      setPasswordError('');
-      setShowPasswordMatch(false);
-      return;
-    }
-
-    setShowPasswordMatch(true);
-
-    if (pass !== confirmPass) {
-      setPasswordError('Las contraseñas no coinciden');
-      return false;
-    } else {
-      setPasswordError('');
-      return true;
-    }
-  };
-
-  const handleUsernameChange = (value: string) => {
+  // Validation handlers
+  const handleUsernameChange = (value: string): void => {
     setUsername(value);
-    validateUsername(value);
+    const result = validateUsername(value);
+    setUsernameError(result.error);
   };
 
-  const handleDisplayNameChange = (value: string) => {
+  const handleDisplayNameChange = (value: string): void => {
     setDisplayName(value);
-    validateDisplayName(value);
+    const result = validateDisplayName(value);
+    setDisplayNameError(result.error);
   };
 
-  const handleEmailChange = (value: string) => {
+  const handleEmailChange = (value: string): void => {
     setEmail(value);
-    validateEmail(value);
+    const result = validateEmail(value);
+    setEmailError(result.error);
   };
 
-  const handlePasswordChange = (value: string) => {
+  const handlePasswordChange = (value: string): void => {
     setPassword(value);
-    validatePasswords(value, confirmPassword);
+    const passwordResult = validatePassword(value);
+
+    if (confirmPassword.length > 0) {
+      const matchResult = validatePasswordMatch(value, confirmPassword);
+      setPasswordError(passwordResult.error || matchResult.error);
+      setShowPasswordMatch(true);
+    }
   };
 
-  const handleConfirmPasswordChange = (value: string) => {
+  const handleConfirmPasswordChange = (value: string): void => {
     setConfirmPassword(value);
-    validatePasswords(password, value);
+    setShowPasswordMatch(true);
+    const result = validatePasswordMatch(password, value);
+    setPasswordError(result.error);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Form validation
+  const isFormValid = (): boolean => {
+    return !!(
+      username &&
+      displayName &&
+      email &&
+      password &&
+      confirmPassword &&
+      !usernameError &&
+      !displayNameError &&
+      !emailError &&
+      !passwordError &&
+      password.length >= 6
+    );
+  };
+
+  // Form submission
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
-    // Validación de username
-    if (!validateUsername(username)) {
+    // Final validation
+    const usernameResult = validateUsername(username);
+    const displayNameResult = validateDisplayName(displayName);
+    const emailResult = validateEmail(email);
+    const passwordMatchResult = validatePasswordMatch(password, confirmPassword);
+
+    if (!usernameResult.isValid) {
+      setUsernameError(usernameResult.error);
       return;
     }
 
-    // Validación de displayName
-    if (!validateDisplayName(displayName)) {
+    if (!displayNameResult.isValid) {
+      setDisplayNameError(displayNameResult.error);
       return;
     }
 
-    // Validación de email
-    if (!validateEmail(email)) {
+    if (!emailResult.isValid) {
+      setEmailError(emailResult.error);
       return;
     }
 
-    // Validación final antes de enviar
-    if (password !== confirmPassword) {
-      setPasswordError('Las contraseñas no coinciden');
+    if (!passwordMatchResult.isValid) {
+      setPasswordError(passwordMatchResult.error);
       return;
     }
 
@@ -167,253 +135,114 @@ export default function SignUpPage() {
       return;
     }
 
-    const createUser = {
-      Username: username,
-      DisplayName: displayName,
-      Email: email,
-      Password: password,
+    // Submit
+    try {
+      await signUp({ username, displayName, email, password });
+    } catch {
+      // Error is handled by the hook
     }
-
-    // PlayFabClient.RegisterPlayFabUser(createUser, (error, result) => {
-    //   if (error) {
-    //     console.error("Fallo el registro:", error);
-    //   } else {
-    //     console.log("Registro exitoso:", result);
-    //   }
-    // });
-
-
-    PlayFabClient.RegisterPlayFabUser(createUser, (error, result) => {
-      if (error) {
-        console.error("Sign up failed:", error);
-      } else {
-        console.log("Sign up successful:", result);
-        if(result.data.SessionTicket) 
-          sessionStorage.setItem('playfabTicket', result.data.SessionTicket);
-
-        router.replace('/login');
-      }
-    });
-
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1E1E1E] text-white p-6">
-      <div className="w-full max-w-md p-8 bg-[#202124] rounded-2xl shadow-lg border border-[#3C4043]">
-        <h2 className="text-2xl font-bold mb-6 text-center">
-          Sign up <span className="text-[#8AB4F8]">Youtask</span>
-        </h2>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="text-sm text-[#BDC1C6]">Username</label>
-            <div className="relative">
-              <input
-                type="text"
-                className={`w-full mt-1 p-3 rounded-lg bg-[#2D2F31] border ${
-                  usernameError
-                    ? 'border-red-500'
-                    : username && !usernameError
-                    ? 'border-green-500'
-                    : 'border-[#3C4043]'
-                } text-white placeholder:text-[#BDC1C6] outline-none focus:border-blue-500 pr-10`}
-                placeholder="usuario123"
-                value={username}
-                onChange={(e) => handleUsernameChange(e.target.value)}
-                required
-              />
-              {/* Indicador visual */}
-              {username && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {usernameError ? (
-                    <span className="text-red-500 text-xl">✗</span>
-                  ) : (
-                    <span className="text-green-500 text-xl">✓</span>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* Mensaje de error */}
-            {usernameError && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <span>⚠️</span>
-                {usernameError}
-              </p>
-            )}
-            {/* Mensaje de éxito */}
-            {!usernameError && username && (
-              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                <span>✓</span>
-                Username válido (3-20 caracteres, sin espacios)
-              </p>
-            )}
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Bienvenido a <span className="text-purple-400">Youtask</span>
+          </h1>
+          <p className="text-gray-400">Crea tu cuenta para comenzar</p>
+        </div>
 
-          <div>
-            <label className="text-sm text-[#BDC1C6]">Display Name</label>
-            <div className="relative">
-              <input
-                type="text"
-                className={`w-full mt-1 p-3 rounded-lg bg-[#2D2F31] border ${
-                  displayNameError
-                    ? 'border-red-500'
-                    : displayName && !displayNameError
-                    ? 'border-green-500'
-                    : 'border-[#3C4043]'
-                } text-white placeholder:text-[#BDC1C6] outline-none focus:border-blue-500 pr-10`}
-                placeholder="Juan Pérez"
-                value={displayName}
-                onChange={(e) => handleDisplayNameChange(e.target.value)}
-                required
-              />
-              {/* Indicador visual */}
-              {displayName && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {displayNameError ? (
-                    <span className="text-red-500 text-xl">✗</span>
-                  ) : (
-                    <span className="text-green-500 text-xl">✓</span>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* Mensaje de error */}
-            {displayNameError && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <span>⚠️</span>
-                {displayNameError}
-              </p>
-            )}
-            {/* Mensaje de éxito */}
-            {!displayNameError && displayName && (
-              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                <span>✓</span>
-                Nombre válido (3-25 caracteres)
-              </p>
-            )}
-          </div>
+        {/* Form */}
+        <div className="bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <FormField
+              label="Username"
+              type="text"
+              placeholder="usuario123"
+              value={username}
+              onChange={handleUsernameChange}
+              error={usernameError}
+              showValidation={true}
+              successMessage="Username válido (3-20 caracteres, sin espacios)"
+              required
+            />
 
-          <div>
-            <label className="text-sm text-[#BDC1C6]">Email</label>
-            <div className="relative">
-              <input
-                type="email"
-                className={`w-full mt-1 p-3 rounded-lg bg-[#2D2F31] border ${
-                  emailError
-                    ? 'border-red-500'
-                    : email && !emailError
-                    ? 'border-green-500'
-                    : 'border-[#3C4043]'
-                } text-white placeholder:text-[#BDC1C6] outline-none focus:border-blue-500 pr-10`}
-                placeholder="tucorreo@ejemplo.com"
-                value={email}
-                onChange={(e) => handleEmailChange(e.target.value)}
-                required
-              />
-              {/* Indicador visual */}
-              {email && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {emailError ? (
-                    <span className="text-red-500 text-xl">✗</span>
-                  ) : (
-                    <span className="text-green-500 text-xl">✓</span>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* Mensaje de error */}
-            {emailError && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <span>⚠️</span>
-                {emailError}
-              </p>
-            )}
-            {/* Mensaje de éxito */}
-            {!emailError && email && (
-              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                <span>✓</span>
-                Email válido
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="text-sm text-[#BDC1C6]">Password</label>
-            <input
+            <FormField
+              label="Display Name"
+              type="text"
+              placeholder="Juan Pérez"
+              value={displayName}
+              onChange={handleDisplayNameChange}
+              error={displayNameError}
+              showValidation={true}
+              successMessage="Nombre válido (3-25 caracteres)"
+              required
+            />
+
+            <FormField
+              label="Email"
+              type="email"
+              placeholder="tucorreo@ejemplo.com"
+              value={email}
+              onChange={handleEmailChange}
+              error={emailError}
+              showValidation={true}
+              successMessage="Email válido"
+              required
+            />
+
+            <FormField
+              label="Password"
               type="password"
-              className="w-full mt-1 p-3 rounded-lg bg-[#2D2F31] border border-[#3C4043] text-white placeholder:text-[#BDC1C6] outline-none focus:border-blue-500"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => handlePasswordChange(e.target.value)}
+              onChange={handlePasswordChange}
+              helpText="Mínimo 6 caracteres"
               required
               minLength={6}
             />
-            <p className="text-xs text-[#BDC1C6] mt-1">Mínimo 6 caracteres</p>
-          </div>
 
-          <div>
-            <label className="text-sm text-[#BDC1C6]">Confirm Password</label>
-            <div className="relative">
-              <input
-                type="password"
-                className={`w-full mt-1 p-3 rounded-lg bg-[#2D2F31] border ${
-                  passwordError
-                    ? 'border-red-500'
-                    : confirmPassword && !passwordError
-                    ? 'border-green-500'
-                    : 'border-[#3C4043]'
-                } text-white placeholder:text-[#BDC1C6] outline-none focus:border-blue-500 pr-10`}
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => handleConfirmPasswordChange(e.target.value)}
-                required
-              />
-              {/* Indicador visual */}
-              {showPasswordMatch && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  {passwordError ? (
-                    <span className="text-red-500 text-xl">✗</span>
-                  ) : (
-                    <span className="text-green-500 text-xl">✓</span>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* Mensaje de error */}
-            {passwordError && (
-              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                <span>⚠️</span>
-                {passwordError}
-              </p>
-            )}
-            {/* Mensaje de éxito */}
-            {!passwordError && confirmPassword && showPasswordMatch && (
-              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                <span>✓</span>
-                Las contraseñas coinciden
-              </p>
-            )}
-          </div>
+            <FormField
+              label="Confirm Password"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              error={passwordError}
+              showValidation={showPasswordMatch}
+              successMessage="Las contraseñas coinciden"
+              required
+            />
 
-          <button
-            type="submit"
-            disabled={
-              !username || !displayName || !email || !password || !confirmPassword ||
-              !!usernameError || !!displayNameError || !!emailError || !!passwordError ||
-              password.length < 6
-            }
-            className={`w-full mt-4 p-3 rounded-lg font-semibold transition-all ${
-              !username || !displayName || !email || !password || !confirmPassword ||
-              !!usernameError || !!displayNameError || !!emailError || !!passwordError ||
-              password.length < 6
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-500 to-pink-500 text-white hover:opacity-90'
-            }`}
-          >
-            Lets go
-          </button>
-        </form>
-        <p className="text-sm text-[#BDC1C6] mt-6 text-center">
-          Dont you have an account? <Link href="/login">login</Link>
-        </p>
+            {/* Sign up error */}
+            {signUpError && (
+              <ValidationMessage type="error" message={signUpError} />
+            )}
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={!isFormValid() || isLoading}
+              className={`w-full py-3 px-4 rounded-md font-semibold transition-all duration-200 ${
+                !isFormValid() || isLoading
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700 active:scale-95'
+              }`}
+            >
+              {isLoading ? 'Registrando...' : 'Crear cuenta'}
+            </button>
+          </form>
+
+          {/* Login link */}
+          <p className="text-sm text-gray-400 mt-6 text-center">
+            ¿Ya tienes una cuenta?{' '}
+            <Link href="/login" className="text-purple-400 hover:text-purple-300">
+              Inicia sesión
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

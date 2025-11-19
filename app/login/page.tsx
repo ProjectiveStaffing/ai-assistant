@@ -1,10 +1,10 @@
 'use client';
 
+// External libraries
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-import { PlayFab, PlayFabClient } from 'playfab-sdk';
 import Link from 'next/link';
+import { PlayFab, PlayFabClient } from 'playfab-sdk';
 
 if (!process.env.NEXT_PUBLIC_PLAYFAB_TITLE_ID) {
   throw new Error("NEXT_PUBLIC_PLAYFAB_TITLE_ID is not defined");
@@ -38,14 +38,15 @@ export default function LoginPage() {
 
     PlayFabClient.LoginWithEmailAddress(loginRequestEmail, (error, result) => {
       if (error) {
-        console.error("Fallo el login:", error);
-      } else {
-        console.log("Login exitoso:", result);
-        if(result.data.SessionTicket) 
-          sessionStorage.setItem('playfabTicket', result.data.SessionTicket);
-
-        router.replace('/assistant');
+        // Error handling could be improved with user feedback
+        return;
       }
+
+      if(result.data.SessionTicket) {
+        sessionStorage.setItem('playfabTicket', result.data.SessionTicket);
+      }
+
+      router.replace('/assistant');
     });
 
   };

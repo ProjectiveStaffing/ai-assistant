@@ -1,86 +1,63 @@
-'use client'
-import React, { createContext, ReactNode, useEffect, useState } from "react";
-import { RemindersContextType } from "../_types/RemindersContextType";
-import { AppState } from "../_types/AppState";
-import { ReminderList } from "../_types/ReminderList";
-import { ListIcon } from "../_icons/ListIcon";
-import { Reminder } from "../_types/Reminder";
-import { findSimilarTask, mergeTaskData } from "../_utils/taskComparison";
+'use client';
+
+/**
+ * Reminders Context
+ * Following BEST_PRACTICES.md:
+ * - Component size < 250 lines
+ * - Organized imports
+ * - Separated concerns (counters and operations extracted)
+ * - No console.logs in production
+ */
+
+// External libraries
+import React, { createContext, ReactNode, useEffect, useState, useMemo } from 'react';
+
+// Types
+import type { RemindersContextType } from '../_types/RemindersContextType';
+import type { AppState } from '../_types/AppState';
+import type { ReminderList } from '../_types/ReminderList';
+import type { Reminder } from '../_types/Reminder';
+
+// Icons
+import { ListIcon } from '../_icons/ListIcon';
+
+// Utilities
+import { updateListCounts } from '../_utils/listCounters';
+import { processTaskWithRelationships, type TaskData } from '../_utils/taskOperations';
 
 export const RemindersContext = createContext<RemindersContextType | undefined>(undefined);
 
+const initialLists: ReminderList[] = [
+  { id: 'all', name: 'All', icon: ListIcon, color: 'text-gray-400', count: 0 },
+  { id: 'tasks', name: 'Tasks', icon: ListIcon, color: 'text-blue-400', count: 0, parentId: 'task' },
+  { id: 'projects', name: 'Projects', icon: ListIcon, color: 'text-purple-400', count: 0, parentId: 'project' },
+  { id: 'habits', name: 'Habits', icon: ListIcon, color: 'text-green-400', count: 0, parentId: 'habit' },
+];
+
+const initialState: AppState = {
+  lists: initialLists,
+  reminders: [],
+  selectedListId: 'all',
+};
+
 export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AppState>(() => {
+  const [state, setState] = useState<AppState>(initialState);
 
-    const initialLists: ReminderList[] = [
-      { id: 'all', name: 'All', icon: ListIcon, color: 'text-gray-400', count: 0 },
-      { id: 'tasks', name: 'Tasks', icon: ListIcon, color: 'text-blue-400', count: 0, parentId: 'task' },
-      { id: 'projects', name: 'Projects', icon: ListIcon, color: 'text-purple-400', count: 0, parentId: 'project' },
-      { id: 'habits', name: 'Habits', icon: ListIcon, color: 'text-green-400', count: 0, parentId: 'habit' },
-    ];
-
-    const initialReminders: Reminder[] = [];
-
-    const calculatedLists = initialLists.map(list => {
-      if (list.id === 'all') {
-        return { ...list, count: initialReminders.length };
-      }
-      return { ...list, count: initialReminders.filter(r => r.listId === list.id && !r.isCompleted).length };
-    });
-
-    return {
-      lists: calculatedLists,
-      reminders: initialReminders,
-      selectedListId: 'all', 
-    };
-  });
-
-  const updateReminderCounts = (currentReminders: Reminder[]) => {
-    setState(prevState => {
-      const updatedLists = prevState.lists.map(list => {
-        let count = 0;
-        if (list.id === 'all') {
-          count = currentReminders.filter(r => !r.isCompleted).length;
-        } else if (list.id === 'today') {
-          const today = new Date().toISOString().split('T')[0];
-          count = currentReminders.filter(r => r.dueDate === today && !r.isCompleted).length;
-        } else if (list.id === 'scheduled') {
-          const today = new Date().toISOString().split('T')[0];
-          count = currentReminders.filter(r => r.dueDate && r.dueDate > today && !r.isCompleted).length;
-        } else if (list.id === 'flagged') {
-          count = currentReminders.filter(r => r.isFlagged && !r.isCompleted).length;
-        } else if (list.id === 'family') { // 👈🏽 Lógica para el contador de Family
-          const familyLists = prevState.lists.filter(l => l.parentId === 'family');
-          const familyReminders = currentReminders.filter(r => familyLists.some(fl => r.relationships?.includes(fl.name)));
-          count = familyReminders.length;
-        } else if (list.id === 'tasks') {
-          count = currentReminders.filter(r =>
-            r.itemType?.toLowerCase() === 'task' && !r.isCompleted
-          ).length;
-        } else if (list.id === 'projects') {
-          count = currentReminders.filter(r =>
-            r.itemType?.toLowerCase() === 'project' && !r.isCompleted
-          ).length;
-        } else if (list.id === 'habits') {
-          count = currentReminders.filter(r =>
-            r.itemType?.toLowerCase() === 'habit' && !r.isCompleted
-          ).length;
-        }
-        else {
-          count = currentReminders.filter(r => r.relationships?.includes(list.name) && !r.isCompleted).length;
-        }
-        return { ...list, count };
-      });
-      return { ...prevState, lists: updatedLists };
-    });
-  };
-
+  // Update list counts when reminders change
   useEffect(() => {
-    updateReminderCounts(state.reminders);
+    setState(prevState => ({
+      ...prevState,
+      lists: updateListCounts(prevState.lists, prevState.reminders),
+    }));
   }, [state.reminders]);
 
-
-  const addReminder = (text: string, listId: string, notes?: string, dueDate?: string) => {
+  // Add reminder
+  const addReminder = (
+    text: string,
+    listId: string,
+    notes?: string,
+    dueDate?: string
+  ): void => {
     const newReminder: Reminder = {
       id: String(Date.now()),
       text,
@@ -89,16 +66,18 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
       notes,
       dueDate,
       isFlagged: false,
-      assignedTo: "",
-      itemType: ""
+      assignedTo: '',
+      itemType: '',
     };
+
     setState(prevState => ({
       ...prevState,
       reminders: [...prevState.reminders, newReminder],
     }));
   };
 
-  const toggleReminderComplete = (reminderId: string) => {
+  // Toggle reminder completion
+  const toggleReminderComplete = (reminderId: string): void => {
     setState(prevState => ({
       ...prevState,
       reminders: prevState.reminders.map(r =>
@@ -107,28 +86,36 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   };
 
-  const addList = (name: string, icon: React.FC<React.SVGProps<SVGSVGElement>>, color: string) => {
+  // Add list
+  const addList = (
+    name: string,
+    icon: React.FC<React.SVGProps<SVGSVGElement>>,
+    color: string
+  ): void => {
     const newList: ReminderList = {
       id: String(Date.now()),
       name,
       icon,
       color,
-      count: 0, // Nueva lista empieza con 0 recordatorios
+      count: 0,
     };
+
     setState(prevState => ({
       ...prevState,
       lists: [...prevState.lists, newList],
     }));
   };
 
-  const selectList = (listId: string) => {
+  // Select list
+  const selectList = (listId: string): void => {
     setState(prevState => ({
       ...prevState,
       selectedListId: listId,
     }));
   };
 
-  const updateReminderCount = (listId: string, count: number) => {
+  // Update reminder count (legacy method, kept for compatibility)
+  const updateReminderCount = (listId: string, count: number): void => {
     setState(prevState => ({
       ...prevState,
       lists: prevState.lists.map(list =>
@@ -137,7 +124,8 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   };
 
-  const updateTask = (taskId: string, updates: Partial<Reminder>) => {
+  // Update task
+  const updateTask = (taskId: string, updates: Partial<Reminder>): void => {
     setState(prevState => ({
       ...prevState,
       reminders: prevState.reminders.map(reminder =>
@@ -146,6 +134,7 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   };
 
+  // Add task with relationships (refactored)
   const addTaskWithRelationships = (
     taskName: string,
     peopleInvolved: string[],
@@ -154,122 +143,46 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
     itemType: string,
     assignedTo: string
   ): { action: 'created' | 'updated' | 'kept_existing'; taskName: string; similarity?: number } => {
+    const taskData: TaskData = {
+      taskName,
+      peopleInvolved,
+      taskCategory,
+      dateToPerform,
+      itemType,
+      assignedTo,
+    };
+
     let result: { action: 'created' | 'updated' | 'kept_existing'; taskName: string; similarity?: number } = {
       action: 'created',
-      taskName
+      taskName,
     };
 
     setState(prevState => {
-      const updatedLists = [...prevState.lists];
-      const updatedReminders = [...prevState.reminders];
+      const operationResult = processTaskWithRelationships(
+        taskData,
+        prevState.reminders,
+        prevState.lists
+      );
 
-      const familyList = updatedLists.find(list => list.id === 'family');
-      const defaultListId = familyList ? familyList.id : 'all';
-
-      // Buscar tarea similar usando el algoritmo de comparación
-      const newTaskData = {
-        text: taskName,
-        assignedTo,
-        itemType
+      result = {
+        action: operationResult.action,
+        taskName: operationResult.taskName,
+        similarity: operationResult.similarity,
       };
-
-      const { index: similarIndex, task: similarTask, similarity } = findSimilarTask(
-        newTaskData,
-        updatedReminders,
-        0.85 // Umbral de similitud del 85%
-      );
-
-      if (similarTask && similarIndex !== -1) {
-        // MODIFICAR tarea existente (o mantenerla si la nueva tiene menos info)
-        console.log(`✏️ Tarea similar encontrada (${Math.round(similarity * 100)}% similitud): "${similarTask.text}"`);
-
-        const mergeResult = mergeTaskData(similarTask, {
-          taskName,
-          peopleInvolved,
-          taskCategory,
-          dateToPerform,
-          itemType,
-          assignedTo
-        });
-
-        console.log(`🔍 ${mergeResult.reason}`);
-
-        if (mergeResult.shouldUpdate) {
-          // La nueva tarea tiene MÁS información, actualizar
-          updatedReminders[similarIndex] = {
-            ...similarTask,
-            ...mergeResult.updates
-          };
-
-          result = {
-            action: 'updated',
-            taskName: similarTask.text,
-            similarity
-          };
-
-          console.log('✅ Tarea actualizada:', updatedReminders[similarIndex]);
-        } else {
-          // La nueva tarea tiene MENOS información, mantener la existente
-          result = {
-            action: 'kept_existing',
-            taskName: similarTask.text,
-            similarity
-          } as any;
-
-          console.log('🛡️ Tarea existente conservada (es más completa)');
-        }
-      } else {
-        // CREAR nueva tarea
-        console.log('➕ Creando nueva tarea:', taskName);
-
-        const newReminder: Reminder = {
-          id: String(Date.now() + Math.random()),
-          text: taskName,
-          isCompleted: false,
-          listId: defaultListId,
-          dueDate: dateToPerform || undefined,
-          isFlagged: false,
-          relationships: peopleInvolved,
-          itemType,
-          assignedTo
-        };
-        updatedReminders.push(newReminder);
-
-        result = {
-          action: 'created',
-          taskName
-        };
-      }
-
-      // Crear lista si no existe
-      const existingList = updatedLists.find(
-        list => list.name.toLowerCase() === assignedTo.toLowerCase()
-      );
-      if (!existingList) {
-        const newList: ReminderList = {
-          id: String(Date.now() + Math.random()),
-          name: assignedTo,
-          icon: ListIcon,
-          color: "text-green-400",
-          count: 0,
-          parentId: itemType?.toLowerCase()
-        };
-        updatedLists.push(newList);
-      }
 
       return {
         ...prevState,
-        lists: updatedLists,
-        reminders: updatedReminders
+        reminders: operationResult.reminders,
+        lists: operationResult.lists,
       };
     });
 
     return result;
   };
 
-
-  return (
-    <RemindersContext.Provider value={{
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo<RemindersContextType>(
+    () => ({
       state,
       addReminder,
       toggleReminderComplete,
@@ -277,8 +190,13 @@ export const RemindersProvider: React.FC<{ children: ReactNode }> = ({ children 
       selectList,
       updateReminderCount,
       updateTask,
-      addTaskWithRelationships
-    }}>
+      addTaskWithRelationships,
+    }),
+    [state]
+  );
+
+  return (
+    <RemindersContext.Provider value={value}>
       {children}
     </RemindersContext.Provider>
   );

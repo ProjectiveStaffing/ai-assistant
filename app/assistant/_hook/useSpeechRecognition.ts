@@ -17,6 +17,101 @@ interface UseSpeechRecognitionReturn {
   error: string | null;
 }
 
+/**
+ * Mapea códigos de error de SpeechRecognition a mensajes amigables
+ */
+const getErrorMessage = (errorCode: string): string => {
+  const errorMessages: Record<string, string> = {
+    'no-speech': 'No se detectó voz. Intenta de nuevo.',
+    'audio-capture': 'No se detectó micrófono.',
+    'not-allowed': 'Permiso de micrófono denegado.',
+    'network': 'Error de red. Verifica tu conexión.'
+  };
+
+  return errorMessages[errorCode] || 'Error en el reconocimiento de voz';
+};
+
+/**
+ * Procesa los resultados del reconocimiento de voz
+ */
+const processRecognitionResults = (
+  event: SpeechRecognitionEvent
+): string => {
+  let finalTranscript = '';
+
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    const transcript = event.results[i][0].transcript;
+    if (event.results[i].isFinal) {
+      finalTranscript += transcript + ' ';
+    }
+  }
+
+  return finalTranscript;
+};
+
+/**
+ * Crea el handler para el evento onresult
+ */
+const createResultHandler = (
+  setTranscript: React.Dispatch<React.SetStateAction<string>>,
+  onResult?: (transcript: string) => void
+) => {
+  return (event: SpeechRecognitionEvent): void => {
+    const finalTranscript = processRecognitionResults(event);
+
+    setTranscript(prev => prev + finalTranscript);
+
+    if (finalTranscript && onResult) {
+      onResult(finalTranscript.trim());
+    }
+  };
+};
+
+/**
+ * Crea el handler para el evento onerror
+ */
+const createErrorHandler = (
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  setIsListening: React.Dispatch<React.SetStateAction<boolean>>,
+  onError?: (error: string) => void
+) => {
+  return (event: SpeechRecognitionErrorEvent): void => {
+    const errorMessage = getErrorMessage(event.error);
+
+    setError(errorMessage);
+    setIsListening(false);
+
+    if (onError) {
+      onError(errorMessage);
+    }
+  };
+};
+
+/**
+ * Crea el handler para el evento onend
+ */
+const createEndHandler = (
+  setIsListening: React.Dispatch<React.SetStateAction<boolean>>
+) => {
+  return (): void => {
+    setIsListening(false);
+  };
+};
+
+/**
+ * Configura la instancia de SpeechRecognition
+ */
+const configureSpeechRecognition = (
+  recognition: SpeechRecognition,
+  continuous: boolean,
+  language: string
+): void => {
+  recognition.continuous = continuous;
+  recognition.interimResults = true;
+  recognition.lang = language;
+  recognition.maxAlternatives = 1;
+};
+
 export const useSpeechRecognition = ({
   onResult,
   onError,
@@ -39,65 +134,13 @@ export const useSpeechRecognition = ({
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
-    recognition.continuous = continuous;
-    recognition.interimResults = true;
-    recognition.lang = language;
-    recognition.maxAlternatives = 1;
+    // Configurar reconocimiento
+    configureSpeechRecognition(recognition, continuous, language);
 
-    // Evento cuando se obtienen resultados
-    recognition.onresult = (event) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' ';
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      const fullTranscript = finalTranscript || interimTranscript;
-      setTranscript(prev => prev + finalTranscript);
-
-      if (finalTranscript && onResult) {
-        onResult(finalTranscript.trim());
-      }
-    };
-
-    // Evento cuando hay un error
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      let errorMessage = 'Error en el reconocimiento de voz';
-
-      switch (event.error) {
-        case 'no-speech':
-          errorMessage = 'No se detectó voz. Intenta de nuevo.';
-          break;
-        case 'audio-capture':
-          errorMessage = 'No se detectó micrófono.';
-          break;
-        case 'not-allowed':
-          errorMessage = 'Permiso de micrófono denegado.';
-          break;
-        case 'network':
-          errorMessage = 'Error de red. Verifica tu conexión.';
-          break;
-      }
-
-      setError(errorMessage);
-      setIsListening(false);
-
-      if (onError) {
-        onError(errorMessage);
-      }
-    };
-
-    // Evento cuando termina el reconocimiento
-    recognition.onend = () => {
-      setIsListening(false);
-    };
+    // Asignar event handlers
+    recognition.onresult = createResultHandler(setTranscript, onResult);
+    recognition.onerror = createErrorHandler(setError, setIsListening, onError);
+    recognition.onend = createEndHandler(setIsListening);
 
     recognitionRef.current = recognition;
 
@@ -122,8 +165,7 @@ export const useSpeechRecognition = ({
     try {
       recognitionRef.current?.start();
       setIsListening(true);
-    } catch (error) {
-      console.error('Error al iniciar reconocimiento:', error);
+    } catch {
       setError('Error al iniciar el micrófono');
     }
   }, [isSupported, onError]);
@@ -132,8 +174,8 @@ export const useSpeechRecognition = ({
     try {
       recognitionRef.current?.stop();
       setIsListening(false);
-    } catch (error) {
-      console.error('Error al detener reconocimiento:', error);
+    } catch {
+      // Error silently handled - recognition may not be running
     }
   }, []);
 
@@ -202,7 +244,7 @@ interface SpeechRecognitionAlternative {
   confidence: number;
 }
 
-declare var SpeechRecognition: {
+declare const SpeechRecognition: {
   prototype: SpeechRecognition;
   new(): SpeechRecognition;
 };

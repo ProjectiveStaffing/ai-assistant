@@ -1,9 +1,19 @@
 'use client'
+
+// External libraries
 import React, { useState, useRef, useEffect } from 'react';
-import { Message } from '../_types/Message';
-import { WRITING } from '../../_constants/chatbot.cons';
-import MicrophoneIcon from '../_icons/MicrophoneIcon';
+
+// Internal hooks
 import { useSpeechRecognition } from '../_hook/useSpeechRecognition';
+
+// Components
+import MicrophoneIcon from '../_icons/MicrophoneIcon';
+
+// Types
+import { Message } from '../_types/Message';
+
+// Constants
+import { WRITING } from '../../_constants/chatbot.cons';
 
 interface ChatSectionProps {
   messages: Message[];
@@ -27,8 +37,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ messages, isLoading, onSendMe
     onResult: (transcript) => {
       setInputMessage(prev => prev + (prev ? ' ' : '') + transcript);
     },
-    onError: (error) => {
-      console.error('Voice error:', error);
+    onError: () => {
       setShowVoiceError(true);
       setTimeout(() => setShowVoiceError(false), 3000);
     },

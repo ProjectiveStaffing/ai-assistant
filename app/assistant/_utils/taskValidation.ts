@@ -58,44 +58,124 @@ export const getMissingFieldQuestion = (
   return fieldQuestions[itemTypeNormalized] || fieldQuestions.default;
 };
 
+// ============================================================================
+// CONSTANTS - Date Keywords
+// ============================================================================
+
+/**
+ * Keywords para identificación de fechas relativas
+ */
+const RELATIVE_DATE_KEYWORDS: Record<string, () => string> = {
+  'hoy': () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  },
+  'today': () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  },
+  'mañana': () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  },
+  'tomorrow': () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  },
+  'pasado mañana': () => {
+    const dayAfter = new Date();
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    return dayAfter.toISOString().split('T')[0];
+  }
+};
+
+/**
+ * Indicadores de que un mensaje contiene una fecha
+ */
+const DATE_INDICATOR_WORDS = [
+  // Días relativos
+  'hoy', 'mañana', 'pasado',
+  'today', 'tomorrow',
+  'próximo', 'próxima', 'siguiente', 'next',
+
+  // Días de la semana - Español
+  'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo',
+
+  // Días de la semana - Inglés
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+
+  // Meses - Español
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+
+  // Meses - Inglés
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+
+  // Periodos
+  'semana', 'week', 'mes', 'month',
+
+  // Indicadores de hora
+  'am', 'pm', ':', 'a las', 'at'
+];
+
+/**
+ * Patrones regex para detectar formatos de fecha
+ */
+const DATE_PATTERNS = [
+  /\d{1,2}\/\d{1,2}\/\d{2,4}/, // 15/12/2024
+  /\d{1,2}-\d{1,2}-\d{2,4}/,   // 15-12-2024
+  /\d{4}-\d{2}-\d{2}/,          // 2024-12-15
+  /\d{1,2}\s+de\s+\w+/,         // 15 de diciembre
+  /\d{1,2}:\d{2}/               // 14:30
+];
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Busca keywords de fecha relativa en el mensaje
+ */
+const findRelativeDateKeyword = (message: string): string | null => {
+  for (const [keyword, getDate] of Object.entries(RELATIVE_DATE_KEYWORDS)) {
+    if (message.includes(keyword)) {
+      return getDate();
+    }
+  }
+  return null;
+};
+
+/**
+ * Verifica si el mensaje contiene indicadores de fecha
+ */
+const hasDateIndicators = (message: string): boolean => {
+  return DATE_INDICATOR_WORDS.some(indicator => message.includes(indicator));
+};
+
+/**
+ * Verifica si el mensaje coincide con patrones de fecha
+ */
+const matchesDatePattern = (message: string): boolean => {
+  return DATE_PATTERNS.some(pattern => pattern.test(message));
+};
+
+// ============================================================================
+// EXPORTED FUNCTIONS
+// ============================================================================
+
 /**
  * Extrae fecha de un mensaje de texto (para completar tarea pendiente)
  */
 export const extractDateFromMessage = (message: string): string | null => {
   const lowerMessage = message.toLowerCase().trim();
 
-  // Mapeo de palabras clave a fechas
-  const dateKeywords: Record<string, () => string> = {
-    'hoy': () => {
-      const today = new Date();
-      return today.toISOString().split('T')[0];
-    },
-    'mañana': () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
-    },
-    'pasado mañana': () => {
-      const dayAfter = new Date();
-      dayAfter.setDate(dayAfter.getDate() + 2);
-      return dayAfter.toISOString().split('T')[0];
-    },
-    'tomorrow': () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
-    },
-    'today': () => {
-      const today = new Date();
-      return today.toISOString().split('T')[0];
-    }
-  };
-
-  // Buscar palabra clave
-  for (const [keyword, getDate] of Object.entries(dateKeywords)) {
-    if (lowerMessage.includes(keyword)) {
-      return getDate();
-    }
+  // Buscar palabra clave de fecha relativa
+  const relativeDate = findRelativeDateKeyword(lowerMessage);
+  if (relativeDate) {
+    return relativeDate;
   }
 
   // Si el mensaje completo parece ser solo una fecha, retornarlo
@@ -113,29 +193,11 @@ export const extractDateFromMessage = (message: string): string | null => {
 export const seemsLikeDateResponse = (message: string): boolean => {
   const lowerMessage = message.toLowerCase().trim();
 
-  const dateIndicators = [
-    'hoy', 'mañana', 'pasado', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo',
-    'today', 'tomorrow', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-    'próximo', 'próxima', 'siguiente', 'next',
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-    'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
-    'semana', 'week', 'mes', 'month',
-    'am', 'pm', ':', 'a las', 'at'
-  ];
-
   // Si el mensaje es corto y contiene indicadores de fecha
-  if (message.length < 50) {
-    return dateIndicators.some(indicator => lowerMessage.includes(indicator));
+  if (message.length < 50 && hasDateIndicators(lowerMessage)) {
+    return true;
   }
 
   // Si tiene formato de fecha
-  const datePatterns = [
-    /\d{1,2}\/\d{1,2}\/\d{2,4}/, // 15/12/2024
-    /\d{1,2}-\d{1,2}-\d{2,4}/,   // 15-12-2024
-    /\d{4}-\d{2}-\d{2}/,          // 2024-12-15
-    /\d{1,2}\s+de\s+\w+/,         // 15 de diciembre
-    /\d{1,2}:\d{2}/               // 14:30
-  ];
-
-  return datePatterns.some(pattern => pattern.test(lowerMessage));
+  return matchesDatePattern(lowerMessage);
 };

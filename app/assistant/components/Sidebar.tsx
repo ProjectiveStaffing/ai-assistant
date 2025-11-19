@@ -1,6 +1,5 @@
 'use client'
 import React, { useState } from "react";
-import { useReminders } from "../_hook/useReminders";
 import CollapsibleListSection from "./CollapsibleListSection";
 import { SearchIcon } from "../_icons/SearchIcon";
 

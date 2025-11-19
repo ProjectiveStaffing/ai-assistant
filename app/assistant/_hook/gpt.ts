@@ -1,4 +1,7 @@
- import type { NextApiRequest, NextApiResponse } from 'next';
+// External libraries
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+// Internal modules
 import openai from './openai';
 
  
@@ -48,12 +51,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
  
     res.status(200).json(parsed);
 
-  } catch (error) {
-
-    console.error('GPT error:', error);
-
+  } catch {
+    // Error logging could be sent to monitoring service in production
     res.status(500).json({ error: 'Error al procesar la solicitud' });
-
   }
 
 }

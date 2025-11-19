@@ -193,6 +193,158 @@ export const shouldUpdateField = (
 };
 
 /**
+ * Verifica si una fecha tiene hora específica
+ */
+const hasTimeInDate = (date: string | undefined): boolean => {
+  if (!date) return false;
+  return /\d{1,2}:\d{2}|[ap]m/i.test(date);
+};
+
+/**
+ * Determina si se debe actualizar el campo de fecha
+ */
+const shouldUpdateDateField = (
+  existingDate: string | undefined,
+  newDate: string | undefined
+): boolean => {
+  if (!shouldUpdateField(existingDate, newDate)) {
+    return false;
+  }
+
+  const existingHasTime = hasTimeInDate(existingDate);
+  const newHasTime = hasTimeInDate(newDate);
+
+  // Solo actualizar si la nueva tiene hora y la vieja no, o si es diferente
+  return !existingDate || newHasTime >= existingHasTime;
+};
+
+/**
+ * Actualiza el campo de texto si la nueva versión es más completa
+ */
+const updateTextField = (
+  existingText: string,
+  newText: string,
+  updates: Partial<Reminder>
+): boolean => {
+  if (newText.length > existingText.length) {
+    updates.text = newText;
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Actualiza el campo de fecha si es necesario
+ */
+const updateDateField = (
+  existingDate: string | undefined,
+  newDate: string,
+  updates: Partial<Reminder>
+): boolean => {
+  if (shouldUpdateDateField(existingDate, newDate)) {
+    updates.dueDate = newDate;
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Actualiza el campo assignedTo si es necesario
+ */
+const updateAssignedToField = (
+  existingAssignedTo: string | undefined,
+  newAssignedTo: string,
+  updates: Partial<Reminder>
+): boolean => {
+  if (shouldUpdateField(existingAssignedTo, newAssignedTo)) {
+    updates.assignedTo = newAssignedTo;
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Actualiza las relaciones combinando valores únicos
+ */
+const updateRelationships = (
+  existingRelationships: string[] | undefined,
+  newPeopleInvolved: string[],
+  updates: Partial<Reminder>
+): boolean => {
+  if (!newPeopleInvolved || newPeopleInvolved.length === 0) {
+    return false;
+  }
+
+  const existing = existingRelationships || [];
+  const combined = Array.from(new Set([...existing, ...newPeopleInvolved]));
+
+  if (combined.length !== existing.length) {
+    updates.relationships = combined;
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Marca la tarea como no completada si estaba completada
+ */
+const markAsIncomplete = (
+  isCompleted: boolean,
+  updates: Partial<Reminder>
+): boolean => {
+  if (isCompleted) {
+    updates.isCompleted = false;
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Compara scores de información y determina si debe continuar
+ */
+const shouldProceedWithMerge = (
+  existingScore: number,
+  newScore: number
+): { shouldProceed: boolean; reason: string } => {
+  if (newScore < existingScore) {
+    return {
+      shouldProceed: false,
+      reason: `La tarea existente tiene más información (${existingScore} vs ${newScore})`
+    };
+  }
+
+  return {
+    shouldProceed: true,
+    reason: ''
+  };
+};
+
+/**
+ * Aplica todas las actualizaciones necesarias a la tarea
+ */
+const applyTaskUpdates = (
+  existingTask: Reminder,
+  newData: {
+    taskName: string;
+    peopleInvolved: string[];
+    dateToPerform: string;
+    assignedTo: string;
+  },
+  updates: Partial<Reminder>
+): boolean => {
+  let hasChanges = false;
+
+  hasChanges = updateTextField(existingTask.text, newData.taskName, updates) || hasChanges;
+  hasChanges = updateDateField(existingTask.dueDate, newData.dateToPerform, updates) || hasChanges;
+  hasChanges = updateAssignedToField(existingTask.assignedTo, newData.assignedTo, updates) || hasChanges;
+  hasChanges = updateRelationships(existingTask.relationships, newData.peopleInvolved, updates) || hasChanges;
+  hasChanges = markAsIncomplete(existingTask.isCompleted, updates) || hasChanges;
+
+  return hasChanges;
+};
+
+/**
  * Combina información de una tarea existente con nueva información
  * SOLO actualiza si la nueva tarea tiene MÁS o IGUAL información
  */
@@ -226,61 +378,19 @@ export const mergeTaskData = (
     notes: undefined
   });
 
-  console.log(`📊 Score existente: ${existingScore} | Score nueva: ${newScore}`);
+  // Verificar si debe proceder con el merge
+  const { shouldProceed, reason: skipReason } = shouldProceedWithMerge(existingScore, newScore);
 
-  // Si la nueva tarea tiene MENOS información, NO actualizar
-  if (newScore < existingScore) {
+  if (!shouldProceed) {
     return {
       updates: {},
       shouldUpdate: false,
-      reason: `La tarea existente tiene más información (${existingScore} vs ${newScore})`
+      reason: skipReason
     };
   }
 
-  // Si la nueva tiene MÁS o IGUAL información, proceder con actualización
-  let hasChanges = false;
-
-  // Actualizar texto si la nueva versión es más larga/completa
-  if (newData.taskName.length > existingTask.text.length) {
-    updates.text = newData.taskName;
-    hasChanges = true;
-  }
-
-  // Actualizar fecha si es nueva o tiene más detalle
-  if (shouldUpdateField(existingTask.dueDate, newData.dateToPerform)) {
-    const existingHasTime = existingTask.dueDate ? /\d{1,2}:\d{2}|[ap]m/i.test(existingTask.dueDate) : false;
-    const newHasTime = newData.dateToPerform ? /\d{1,2}:\d{2}|[ap]m/i.test(newData.dateToPerform) : false;
-
-    // Solo actualizar si la nueva tiene hora y la vieja no, o si es diferente
-    if (!existingTask.dueDate || newHasTime >= existingHasTime) {
-      updates.dueDate = newData.dateToPerform;
-      hasChanges = true;
-    }
-  }
-
-  // Actualizar assignedTo si cambió
-  if (shouldUpdateField(existingTask.assignedTo, newData.assignedTo)) {
-    updates.assignedTo = newData.assignedTo;
-    hasChanges = true;
-  }
-
-  // Actualizar relationships (combinar únicas)
-  if (newData.peopleInvolved && newData.peopleInvolved.length > 0) {
-    const existingRelationships = existingTask.relationships || [];
-    const combinedRelationships = Array.from(
-      new Set([...existingRelationships, ...newData.peopleInvolved])
-    );
-    if (combinedRelationships.length !== existingRelationships.length) {
-      updates.relationships = combinedRelationships;
-      hasChanges = true;
-    }
-  }
-
-  // Marcar como no completada si estaba completada
-  if (existingTask.isCompleted) {
-    updates.isCompleted = false;
-    hasChanges = true;
-  }
+  // Aplicar todas las actualizaciones
+  const hasChanges = applyTaskUpdates(existingTask, newData, updates);
 
   return {
     updates,

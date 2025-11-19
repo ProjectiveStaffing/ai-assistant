@@ -52,8 +52,8 @@ function getItemTypeInSpanish(itemType: string): string {
 export async function fetchTaskFromAPI(
   message: string
 ): Promise<GPTResponse> {
-  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_PROD || 'http://localhost:8080';
-  const response = await fetch(`${apiUrl}/youtask/api/v0/task`, {
+  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_PROD || 'https://go-youtask.vercel.app';
+  const response = await fetch(`${apiUrl}/api/task`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt: message }),

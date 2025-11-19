@@ -18,21 +18,21 @@ interface UseSpeechRecognitionReturn {
 }
 
 /**
- * Mapea códigos de error de SpeechRecognition a mensajes amigables
+ * Maps SpeechRecognition error codes to friendly messages
  */
 const getErrorMessage = (errorCode: string): string => {
   const errorMessages: Record<string, string> = {
-    'no-speech': 'No se detectó voz. Intenta de nuevo.',
-    'audio-capture': 'No se detectó micrófono.',
-    'not-allowed': 'Permiso de micrófono denegado.',
-    'network': 'Error de red. Verifica tu conexión.'
+    'no-speech': 'No speech detected. Please try again.',
+    'audio-capture': 'No microphone detected.',
+    'not-allowed': 'Microphone permission denied.',
+    'network': 'Network error. Please check your connection.'
   };
 
-  return errorMessages[errorCode] || 'Error en el reconocimiento de voz';
+  return errorMessages[errorCode] || 'Speech recognition error';
 };
 
 /**
- * Procesa los resultados del reconocimiento de voz
+ * Processes speech recognition results
  */
 const processRecognitionResults = (
   event: SpeechRecognitionEvent
@@ -50,7 +50,7 @@ const processRecognitionResults = (
 };
 
 /**
- * Crea el handler para el evento onresult
+ * Creates handler for onresult event
  */
 const createResultHandler = (
   setTranscript: React.Dispatch<React.SetStateAction<string>>,
@@ -68,7 +68,7 @@ const createResultHandler = (
 };
 
 /**
- * Crea el handler para el evento onerror
+ * Creates handler for onerror event
  */
 const createErrorHandler = (
   setError: React.Dispatch<React.SetStateAction<string | null>>,
@@ -88,7 +88,7 @@ const createErrorHandler = (
 };
 
 /**
- * Crea el handler para el evento onend
+ * Creates handler for onend event
  */
 const createEndHandler = (
   setIsListening: React.Dispatch<React.SetStateAction<boolean>>
@@ -99,7 +99,7 @@ const createEndHandler = (
 };
 
 /**
- * Configura la instancia de SpeechRecognition
+ * Configures SpeechRecognition instance
  */
 const configureSpeechRecognition = (
   recognition: SpeechRecognition,
@@ -123,21 +123,21 @@ export const useSpeechRecognition = ({
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  // Verificar soporte del navegador
+  // Check browser support
   const isSupported = typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   useEffect(() => {
     if (!isSupported) return;
 
-    // Crear instancia de SpeechRecognition
+    // Create SpeechRecognition instance
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
-    // Configurar reconocimiento
+    // Configure recognition
     configureSpeechRecognition(recognition, continuous, language);
 
-    // Asignar event handlers
+    // Assign event handlers
     recognition.onresult = createResultHandler(setTranscript, onResult);
     recognition.onerror = createErrorHandler(setError, setIsListening, onError);
     recognition.onend = createEndHandler(setIsListening);
@@ -153,7 +153,7 @@ export const useSpeechRecognition = ({
 
   const startListening = useCallback(() => {
     if (!isSupported) {
-      const errorMsg = 'Tu navegador no soporta reconocimiento de voz. Usa Chrome, Edge o Safari.';
+      const errorMsg = 'Your browser does not support speech recognition. Use Chrome, Edge, or Safari.';
       setError(errorMsg);
       if (onError) onError(errorMsg);
       return;
@@ -166,7 +166,7 @@ export const useSpeechRecognition = ({
       recognitionRef.current?.start();
       setIsListening(true);
     } catch {
-      setError('Error al iniciar el micrófono');
+      setError('Error starting microphone');
     }
   }, [isSupported, onError]);
 
@@ -195,7 +195,7 @@ export const useSpeechRecognition = ({
   };
 };
 
-// Declaración de tipos para TypeScript
+// TypeScript type declarations
 declare global {
   interface Window {
     SpeechRecognition: typeof SpeechRecognition;

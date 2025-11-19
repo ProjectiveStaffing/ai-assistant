@@ -29,14 +29,14 @@ export function validateField(
   if (value.length < minLength) {
     return {
       isValid: false,
-      error: `${fieldName} debe tener al menos ${minLength} caracteres`,
+      error: `${fieldName} must be at least ${minLength} characters`,
     };
   }
 
   if (value.length > maxLength) {
     return {
       isValid: false,
-      error: `${fieldName} no puede tener más de ${maxLength} caracteres`,
+      error: `${fieldName} cannot exceed ${maxLength} characters`,
     };
   }
 
@@ -52,12 +52,12 @@ export function validateUsername(username: string): ValidationResult {
   if (/\s/.test(username)) {
     return {
       isValid: false,
-      error: 'El username no puede contener espacios',
+      error: 'Username cannot contain spaces',
     };
   }
 
   // Validate length
-  return validateField(username, 3, 20, 'El username');
+  return validateField(username, 3, 20, 'Username');
 }
 
 /**
@@ -65,7 +65,7 @@ export function validateUsername(username: string): ValidationResult {
  * Rules: 3-25 characters
  */
 export function validateDisplayName(displayName: string): ValidationResult {
-  return validateField(displayName, 3, 25, 'El nombre');
+  return validateField(displayName, 3, 25, 'Display name');
 }
 
 /**
@@ -80,7 +80,7 @@ export function validateEmail(email: string): ValidationResult {
   if (email.length > 254) {
     return {
       isValid: false,
-      error: 'El email es demasiado largo',
+      error: 'Email is too long',
     };
   }
 
@@ -89,7 +89,7 @@ export function validateEmail(email: string): ValidationResult {
   if (!emailRegex.test(email)) {
     return {
       isValid: false,
-      error: 'Por favor ingresa un email válido',
+      error: 'Please enter a valid email',
     };
   }
 
@@ -111,7 +111,7 @@ export function validatePasswordMatch(
   if (password !== confirmPassword) {
     return {
       isValid: false,
-      error: 'Las contraseñas no coinciden',
+      error: 'Passwords do not match',
     };
   }
 
@@ -130,7 +130,7 @@ export function validatePassword(password: string): ValidationResult {
   if (password.length < 6) {
     return {
       isValid: false,
-      error: 'La contraseña debe tener al menos 6 caracteres',
+      error: 'Password must be at least 6 characters',
     };
   }
 

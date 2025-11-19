@@ -1,7 +1,7 @@
 import { MissingField } from '../_types/PendingTask';
 
 /**
- * Valida si una tarea tiene todos los campos requeridos según su tipo
+ * Validates if a task has all required fields based on its type
  */
 export const validateTaskData = (
   taskData: {
@@ -13,7 +13,7 @@ export const validateTaskData = (
 ): { isValid: boolean; missingFields: MissingField[] } => {
   const missingFields: MissingField[] = [];
 
-  // Tasks y Projects REQUIEREN fecha
+  // Tasks and Projects REQUIRE date
   if (
     (taskData.itemType?.toLowerCase() === 'task' ||
      taskData.itemType?.toLowerCase() === 'project') &&
@@ -22,7 +22,7 @@ export const validateTaskData = (
     missingFields.push('dateToPerform');
   }
 
-  // Opcional: Validar assignedTo si es necesario
+  // Optional: Validate assignedTo if needed
   // if (!taskData.assignedTo || taskData.assignedTo.trim() === '') {
   //   missingFields.push('assignedTo');
   // }
@@ -34,7 +34,7 @@ export const validateTaskData = (
 };
 
 /**
- * Genera pregunta contextual basada en el campo faltante
+ * Generates contextual question based on missing field
  */
 export const getMissingFieldQuestion = (
   field: MissingField,
@@ -45,12 +45,12 @@ export const getMissingFieldQuestion = (
 
   const questions: Record<MissingField, Record<string, string>> = {
     dateToPerform: {
-      task: `Entendido, quieres "${taskName}" 📝. ¿Para cuándo quieres programar esta tarea?`,
-      project: `Perfecto, un proyecto: "${taskName}" 💼. ¿Cuál es la fecha de inicio o límite del proyecto?`,
-      default: `¿Para cuándo quieres "${taskName}"?`
+      task: `Understood, you want "${taskName}" 📝. When do you want to schedule this task?`,
+      project: `Perfect, a project: "${taskName}" 💼. What is the start date or project deadline?`,
+      default: `When do you want "${taskName}"?`
     },
     assignedTo: {
-      default: `¿Quién se encargará de "${taskName}"?`
+      default: `Who will be responsible for "${taskName}"?`
     }
   };
 
@@ -63,7 +63,7 @@ export const getMissingFieldQuestion = (
 // ============================================================================
 
 /**
- * Keywords para identificación de fechas relativas
+ * Keywords for relative date identification
  */
 const RELATIVE_DATE_KEYWORDS: Record<string, () => string> = {
   'hoy': () => {
@@ -92,43 +92,45 @@ const RELATIVE_DATE_KEYWORDS: Record<string, () => string> = {
 };
 
 /**
- * Indicadores de que un mensaje contiene una fecha
+ * Indicators that a message contains a date
  */
 const DATE_INDICATOR_WORDS = [
-  // Días relativos
+  // Relative days - Spanish
   'hoy', 'mañana', 'pasado',
+  // Relative days - English
   'today', 'tomorrow',
+  // Next/following - Spanish and English
   'próximo', 'próxima', 'siguiente', 'next',
 
-  // Días de la semana - Español
+  // Days of the week - Spanish
   'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo',
 
-  // Días de la semana - Inglés
+  // Days of the week - English
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 
-  // Meses - Español
+  // Months - Spanish
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 
-  // Meses - Inglés
+  // Months - English
   'january', 'february', 'march', 'april', 'may', 'june',
   'july', 'august', 'september', 'october', 'november', 'december',
 
-  // Periodos
+  // Time periods - Spanish and English
   'semana', 'week', 'mes', 'month',
 
-  // Indicadores de hora
+  // Time indicators - Spanish and English
   'am', 'pm', ':', 'a las', 'at'
 ];
 
 /**
- * Patrones regex para detectar formatos de fecha
+ * Regex patterns to detect date formats
  */
 const DATE_PATTERNS = [
   /\d{1,2}\/\d{1,2}\/\d{2,4}/, // 15/12/2024
   /\d{1,2}-\d{1,2}-\d{2,4}/,   // 15-12-2024
   /\d{4}-\d{2}-\d{2}/,          // 2024-12-15
-  /\d{1,2}\s+de\s+\w+/,         // 15 de diciembre
+  /\d{1,2}\s+de\s+\w+/,         // 15 de diciembre (Spanish)
   /\d{1,2}:\d{2}/               // 14:30
 ];
 
@@ -137,7 +139,7 @@ const DATE_PATTERNS = [
 // ============================================================================
 
 /**
- * Busca keywords de fecha relativa en el mensaje
+ * Searches for relative date keywords in the message
  */
 const findRelativeDateKeyword = (message: string): string | null => {
   for (const [keyword, getDate] of Object.entries(RELATIVE_DATE_KEYWORDS)) {
@@ -149,14 +151,14 @@ const findRelativeDateKeyword = (message: string): string | null => {
 };
 
 /**
- * Verifica si el mensaje contiene indicadores de fecha
+ * Checks if message contains date indicators
  */
 const hasDateIndicators = (message: string): boolean => {
   return DATE_INDICATOR_WORDS.some(indicator => message.includes(indicator));
 };
 
 /**
- * Verifica si el mensaje coincide con patrones de fecha
+ * Checks if message matches date patterns
  */
 const matchesDatePattern = (message: string): boolean => {
   return DATE_PATTERNS.some(pattern => pattern.test(message));
@@ -167,37 +169,37 @@ const matchesDatePattern = (message: string): boolean => {
 // ============================================================================
 
 /**
- * Extrae fecha de un mensaje de texto (para completar tarea pendiente)
+ * Extracts date from text message (to complete pending task)
  */
 export const extractDateFromMessage = (message: string): string | null => {
   const lowerMessage = message.toLowerCase().trim();
 
-  // Buscar palabra clave de fecha relativa
+  // Search for relative date keyword
   const relativeDate = findRelativeDateKeyword(lowerMessage);
   if (relativeDate) {
     return relativeDate;
   }
 
-  // Si el mensaje completo parece ser solo una fecha, retornarlo
-  // Ejemplo: "lunes", "próximo viernes", "15 de diciembre"
+  // If the full message seems to be just a date, return it
+  // Example: "monday", "next friday", "15 de diciembre"
   if (lowerMessage.length < 30) {
-    return message; // Dejar que Azure OpenAI lo interprete después
+    return message; // Let Azure OpenAI interpret it later
   }
 
   return null;
 };
 
 /**
- * Determina si un mensaje parece ser una respuesta a una pregunta de fecha
+ * Determines if a message seems to be a response to a date question
  */
 export const seemsLikeDateResponse = (message: string): boolean => {
   const lowerMessage = message.toLowerCase().trim();
 
-  // Si el mensaje es corto y contiene indicadores de fecha
+  // If message is short and contains date indicators
   if (message.length < 50 && hasDateIndicators(lowerMessage)) {
     return true;
   }
 
-  // Si tiene formato de fecha
+  // If it has date format
   return matchesDatePattern(lowerMessage);
 };

@@ -17,33 +17,33 @@ export function generateTaskResponseMessage(
   const similarityPercent = Math.round((result.similarity || 0) * 100);
 
   if (result.action === 'updated') {
-    return `✏️ He actualizado la tarea existente "${result.taskName}" con la nueva información (similitud: ${similarityPercent}%).`;
+    return `✏️ I've updated the existing task "${result.taskName}" with new information (similarity: ${similarityPercent}%).`;
   }
 
   if (result.action === 'kept_existing') {
-    return `🛡️ Ya tienes una tarea similar "${result.taskName}" con más información. He mantenido la versión más completa (similitud: ${similarityPercent}%).`;
+    return `🛡️ You already have a similar task "${result.taskName}" with more information. I've kept the more complete version (similarity: ${similarityPercent}%).`;
   }
 
   // Created
   if (pendingTask) {
-    const itemTypeES = getItemTypeInSpanish(pendingTask.itemType);
-    return `✅ Perfecto, ${itemTypeES} creada: "${pendingTask.taskName}".`;
+    const itemType = getItemTypeName(pendingTask.itemType);
+    return `✅ Perfect, ${itemType} created: "${pendingTask.taskName}".`;
   }
 
-  return `✅ ${modelResponse || 'Tarea creada exitosamente.'}`;
+  return `✅ ${modelResponse || 'Task created successfully.'}`;
 }
 
 /**
- * Translates item type to Spanish
+ * Gets friendly name for item type
  */
-function getItemTypeInSpanish(itemType: string): string {
+function getItemTypeName(itemType: string): string {
   const translations: Record<string, string> = {
-    task: 'tarea',
-    project: 'proyecto',
-    habit: 'hábito',
+    task: 'task',
+    project: 'project',
+    habit: 'habit',
   };
 
-  return translations[itemType.toLowerCase()] || 'tarea';
+  return translations[itemType.toLowerCase()] || 'task';
 }
 
 /**

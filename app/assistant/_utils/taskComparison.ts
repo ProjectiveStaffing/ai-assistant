@@ -1,25 +1,25 @@
 import { Reminder } from '../_types/Reminder';
 
 /**
- * Normaliza texto para comparación
- * - Convierte a minúsculas
- * - Elimina tildes/acentos
- * - Elimina espacios extras
- * - Elimina puntuación
+ * Normalizes text for comparison
+ * - Converts to lowercase
+ * - Removes accents/diacritics
+ * - Removes extra spaces
+ * - Removes punctuation
  */
 export const normalizeText = (text: string): string => {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Elimina tildes
-    .replace(/[^\w\s]/g, '') // Elimina puntuación
-    .replace(/\s+/g, ' ') // Normaliza espacios
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^\w\s]/g, '') // Remove punctuation
+    .replace(/\s+/g, ' ') // Normalize spaces
     .trim();
 };
 
 /**
- * Calcula la similitud entre dos textos usando distancia de Levenshtein
- * Retorna un valor entre 0 (totalmente diferentes) y 1 (idénticos)
+ * Calculates similarity between two texts using Levenshtein distance
+ * Returns a value between 0 (completely different) and 1 (identical)
  */
 export const calculateTextSimilarity = (text1: string, text2: string): number => {
   const normalized1 = normalizeText(text1);
@@ -33,7 +33,7 @@ export const calculateTextSimilarity = (text1: string, text2: string): number =>
   if (len1 === 0) return len2 === 0 ? 1 : 0;
   if (len2 === 0) return 0;
 
-  // Distancia de Levenshtein
+  // Levenshtein distance
   const matrix: number[][] = [];
 
   for (let i = 0; i <= len1; i++) {
@@ -48,9 +48,9 @@ export const calculateTextSimilarity = (text1: string, text2: string): number =>
     for (let j = 1; j <= len2; j++) {
       const cost = normalized1[i - 1] === normalized2[j - 1] ? 0 : 1;
       matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,     // Eliminación
-        matrix[i][j - 1] + 1,     // Inserción
-        matrix[i - 1][j - 1] + cost // Sustitución
+        matrix[i - 1][j] + 1,     // Deletion
+        matrix[i][j - 1] + 1,     // Insertion
+        matrix[i - 1][j - 1] + cost // Substitution
       );
     }
   }
@@ -61,27 +61,27 @@ export const calculateTextSimilarity = (text1: string, text2: string): number =>
 };
 
 /**
- * Verifica si dos tareas son similares basándose en múltiples criterios
+ * Checks if two tasks are similar based on multiple criteria
  */
 export const areTasksSimilar = (
   task1: Pick<Reminder, 'text' | 'assignedTo' | 'itemType'>,
   task2: Pick<Reminder, 'text' | 'assignedTo' | 'itemType'>,
   threshold: number = 0.85
 ): boolean => {
-  // 1. Verificar tipo de item (task, project, habit)
+  // 1. Check item type (task, project, habit)
   if (task1.itemType?.toLowerCase() !== task2.itemType?.toLowerCase()) {
     return false;
   }
 
-  // 2. Calcular similitud de texto
+  // 2. Calculate text similarity
   const textSimilarity = calculateTextSimilarity(task1.text, task2.text);
 
-  // 3. Si la similitud de texto es alta, considerarlas similares
+  // 3. If text similarity is high, consider them similar
   if (textSimilarity >= threshold) {
     return true;
   }
 
-  // 4. Verificar si tienen el mismo assignedTo y similitud moderada
+  // 4. Check if they have the same assignedTo and moderate similarity
   if (
     task1.assignedTo?.toLowerCase() === task2.assignedTo?.toLowerCase() &&
     textSimilarity >= 0.7
@@ -93,8 +93,8 @@ export const areTasksSimilar = (
 };
 
 /**
- * Busca una tarea similar en un array de recordatorios
- * Retorna el índice de la tarea similar o -1 si no encuentra
+ * Searches for a similar task in an array of reminders
+ * Returns the index of the similar task or -1 if not found
  */
 export const findSimilarTask = (
   newTask: Pick<Reminder, 'text' | 'assignedTo' | 'itemType'>,
@@ -108,7 +108,7 @@ export const findSimilarTask = (
   for (let i = 0; i < existingTasks.length; i++) {
     const task = existingTasks[i];
 
-    // Solo comparar con tareas no completadas
+    // Only compare with uncompleted tasks
     if (task.isCompleted) continue;
 
     const similarity = calculateTextSimilarity(newTask.text, task.text);
@@ -128,8 +128,8 @@ export const findSimilarTask = (
 };
 
 /**
- * Calcula el "nivel de información" de una tarea
- * Retorna un score que representa cuánta información contiene
+ * Calculates the "information level" of a task
+ * Returns a score representing how much information it contains
  */
 export const calculateInformationScore = (task: {
   text: string;
@@ -140,32 +140,32 @@ export const calculateInformationScore = (task: {
 }): number => {
   let score = 0;
 
-  // Puntos por longitud del texto (más palabras = más detalles)
+  // Points for text length (more words = more details)
   const wordCount = task.text.trim().split(/\s+/).length;
-  score += wordCount * 2; // 2 puntos por palabra
+  score += wordCount * 2; // 2 points per word
 
-  // Puntos por tener fecha
+  // Points for having a date
   if (task.dueDate && task.dueDate !== '') {
     score += 15;
 
-    // Puntos extra si tiene hora específica (ej: "7pm", "19:00")
+    // Extra points if it has specific time (e.g., "7pm", "19:00")
     const hasTime = /\d{1,2}:\d{2}|[ap]m|[AP]M|\d{1,2}\s*[ap]m/i.test(task.dueDate);
     if (hasTime) {
       score += 10;
     }
   }
 
-  // Puntos por tener persona asignada
+  // Points for having an assigned person
   if (task.assignedTo && task.assignedTo !== '') {
     score += 8;
   }
 
-  // Puntos por relationships (más personas = más contexto)
+  // Points for relationships (more people = more context)
   if (task.relationships && task.relationships.length > 0) {
     score += task.relationships.length * 5;
   }
 
-  // Puntos por tener notas
+  // Points for having notes
   if (task.notes && task.notes !== '') {
     score += task.notes.length * 0.5;
   }
@@ -174,26 +174,26 @@ export const calculateInformationScore = (task: {
 };
 
 /**
- * Determina qué campos de la tarea deben actualizarse
+ * Determines which task fields should be updated
  */
 export const shouldUpdateField = (
   existingValue: string | undefined,
   newValue: string | undefined
 ): boolean => {
-  // Si el nuevo valor está vacío o indefinido, mantener el existente
+  // If new value is empty or undefined, keep existing
   if (!newValue || newValue === '') return false;
 
-  // Si el valor existente está vacío, actualizar con el nuevo
+  // If existing value is empty, update with new
   if (!existingValue || existingValue === '') return true;
 
-  // Si son diferentes, actualizar
+  // If they are different, update
   if (existingValue !== newValue) return true;
 
   return false;
 };
 
 /**
- * Verifica si una fecha tiene hora específica
+ * Checks if a date has specific time
  */
 const hasTimeInDate = (date: string | undefined): boolean => {
   if (!date) return false;
@@ -201,7 +201,7 @@ const hasTimeInDate = (date: string | undefined): boolean => {
 };
 
 /**
- * Determina si se debe actualizar el campo de fecha
+ * Determines if date field should be updated
  */
 const shouldUpdateDateField = (
   existingDate: string | undefined,
@@ -214,12 +214,12 @@ const shouldUpdateDateField = (
   const existingHasTime = hasTimeInDate(existingDate);
   const newHasTime = hasTimeInDate(newDate);
 
-  // Solo actualizar si la nueva tiene hora y la vieja no, o si es diferente
+  // Only update if new has time and old doesn't, or if it's different
   return !existingDate || newHasTime >= existingHasTime;
 };
 
 /**
- * Actualiza el campo de texto si la nueva versión es más completa
+ * Updates text field if new version is more complete
  */
 const updateTextField = (
   existingText: string,
@@ -234,7 +234,7 @@ const updateTextField = (
 };
 
 /**
- * Actualiza el campo de fecha si es necesario
+ * Updates date field if necessary
  */
 const updateDateField = (
   existingDate: string | undefined,
@@ -249,7 +249,7 @@ const updateDateField = (
 };
 
 /**
- * Actualiza el campo assignedTo si es necesario
+ * Updates assignedTo field if necessary
  */
 const updateAssignedToField = (
   existingAssignedTo: string | undefined,
@@ -264,7 +264,7 @@ const updateAssignedToField = (
 };
 
 /**
- * Actualiza las relaciones combinando valores únicos
+ * Updates relationships by combining unique values
  */
 const updateRelationships = (
   existingRelationships: string[] | undefined,
@@ -287,7 +287,7 @@ const updateRelationships = (
 };
 
 /**
- * Marca la tarea como no completada si estaba completada
+ * Marks task as incomplete if it was completed
  */
 const markAsIncomplete = (
   isCompleted: boolean,
@@ -301,7 +301,7 @@ const markAsIncomplete = (
 };
 
 /**
- * Compara scores de información y determina si debe continuar
+ * Compares information scores and determines if should proceed
  */
 const shouldProceedWithMerge = (
   existingScore: number,
@@ -310,7 +310,7 @@ const shouldProceedWithMerge = (
   if (newScore < existingScore) {
     return {
       shouldProceed: false,
-      reason: `La tarea existente tiene más información (${existingScore} vs ${newScore})`
+      reason: `Existing task has more information (${existingScore} vs ${newScore})`
     };
   }
 
@@ -321,7 +321,7 @@ const shouldProceedWithMerge = (
 };
 
 /**
- * Aplica todas las actualizaciones necesarias a la tarea
+ * Applies all necessary updates to the task
  */
 const applyTaskUpdates = (
   existingTask: Reminder,
@@ -345,8 +345,8 @@ const applyTaskUpdates = (
 };
 
 /**
- * Combina información de una tarea existente con nueva información
- * SOLO actualiza si la nueva tarea tiene MÁS o IGUAL información
+ * Merges information from existing task with new information
+ * ONLY updates if new task has MORE or EQUAL information
  */
 export const mergeTaskData = (
   existingTask: Reminder,
@@ -361,7 +361,7 @@ export const mergeTaskData = (
 ): { updates: Partial<Reminder>; shouldUpdate: boolean; reason: string } => {
   const updates: Partial<Reminder> = {};
 
-  // Calcular scores de información
+  // Calculate information scores
   const existingScore = calculateInformationScore({
     text: existingTask.text,
     dueDate: existingTask.dueDate,
@@ -378,7 +378,7 @@ export const mergeTaskData = (
     notes: undefined
   });
 
-  // Verificar si debe proceder con el merge
+  // Check if should proceed with merge
   const { shouldProceed, reason: skipReason } = shouldProceedWithMerge(existingScore, newScore);
 
   if (!shouldProceed) {
@@ -389,14 +389,14 @@ export const mergeTaskData = (
     };
   }
 
-  // Aplicar todas las actualizaciones
+  // Apply all updates
   const hasChanges = applyTaskUpdates(existingTask, newData, updates);
 
   return {
     updates,
     shouldUpdate: hasChanges,
     reason: hasChanges
-      ? `Tarea actualizada con más información (${newScore} vs ${existingScore})`
-      : 'No hay cambios necesarios'
+      ? `Task updated with more information (${newScore} vs ${existingScore})`
+      : 'No changes needed'
   };
 };

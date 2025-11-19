@@ -1,6 +1,6 @@
 export const WRITING = 'Typing...';
 export const GREETING = 'Hi I\'m your Automatic Task Manager';
-export const GREETINGS_02 = '¡Hi! How can I help you?';
+export const GREETINGS_02 = 'Hi! How can I help you?';
 
 export const AZURE_ERROR_02 = 'Error sending message to Azure:';
 export const AZURE_ERROR_03 = 'There was a problem connecting to the model. Please try again.';

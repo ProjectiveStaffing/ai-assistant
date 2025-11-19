@@ -52,7 +52,7 @@ function getItemTypeInSpanish(itemType: string): string {
 export async function fetchTaskFromAPI(
   message: string
 ): Promise<GPTResponse> {
-  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_DEV || 'http://localhost:8080';
+  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_PROD || 'http://localhost:8080';
   const response = await fetch(`${apiUrl}/youtask/api/v0/task`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
